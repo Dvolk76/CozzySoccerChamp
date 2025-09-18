@@ -606,6 +606,37 @@ body {
   -webkit-backdrop-filter: blur(20px);
 }
 
+/* Last sync bar */
+.last-sync {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--tg-theme-hint-color);
+  margin-bottom: 12px;
+}
+
+.last-sync-label {
+  opacity: 0.8;
+}
+
+.last-sync-value {
+  font-weight: 600;
+  color: var(--tg-theme-text-color);
+  opacity: 0.7;
+}
+
+.last-sync-refresh {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--tg-theme-text-color);
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .admin-badge {
   background: #28a745;
   color: white;

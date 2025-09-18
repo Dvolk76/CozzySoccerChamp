@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useUser } from '../hooks/useUser';
 import { useCacheStats } from '../hooks/useData';
+import { LastSync } from '../components/LastSync';
 import type { User } from '../types';
 
 interface AdminViewProps {
@@ -11,7 +12,7 @@ interface AdminViewProps {
 export function AdminView({ onEditUserPredictions }: AdminViewProps = {}) {
   const { user, claimAdmin } = useUser();
   const isAdmin = user?.role === 'ADMIN';
-  const { stats, loading: loadingStats, refreshCache } = useCacheStats(isAdmin);
+  const { stats, loading: loadingStats, refreshCache, lastUpdate } = useCacheStats(isAdmin);
   
   const [syncing, setSyncing] = useState(false);
   const [recalcing, setRecalcing] = useState(false);
@@ -124,6 +125,7 @@ export function AdminView({ onEditUserPredictions }: AdminViewProps = {}) {
       </div>
 
       <div className="container">
+        <LastSync lastUpdate={lastUpdate} isLoading={loadingStats} onRefresh={handleRefreshCache} />
         {!isAdmin && (
           <div className="match-card">
             <h3>Стать администратором</h3>

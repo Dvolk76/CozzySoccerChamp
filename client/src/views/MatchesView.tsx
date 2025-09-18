@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { MatchCard } from '../components/MatchCard';
 import { useMatches } from '../hooks/useData';
+import { LastSync } from '../components/LastSync';
 import type { Match } from '../types';
 import { useMatchesUiState } from '../hooks/useMatchesUiState';
 
@@ -227,6 +228,7 @@ export function MatchesView() {
 
   return (
     <div>
+      <LastSync lastUpdate={lastUpdate} isLoading={isPolling} onRefresh={refresh} />
       {Object.entries(groupedMatches).map(([groupName, dayGroups]) => {
         const isGroupCollapsed = collapsedGroups.has(groupName);
         

@@ -199,7 +199,7 @@ export function useCacheStats(enabled: boolean = false) {
   }, [enabled]);
 
   // Auto-refresh cache stats every 10 seconds when enabled
-  const { manualPoll } = useDataPolling(
+  const { manualPoll, lastUpdate } = useDataPolling(
     fetchStats,
     10000, // 10 seconds
     enabled
@@ -234,6 +234,7 @@ export function useCacheStats(enabled: boolean = false) {
     loading,
     error,
     refresh,
-    refreshCache
+    refreshCache,
+    lastUpdate
   };
 }

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { LeaderboardItem } from '../components/LeaderboardItem';
 import { useLeaderboard } from '../hooks/useData';
+import { LastSync } from '../components/LastSync';
 import type { LeaderboardItem as LeaderboardItemType } from '../types';
 
 export function LeaderboardView() {
@@ -39,6 +40,7 @@ export function LeaderboardView() {
 
     return (
       <div>
+        <LastSync lastUpdate={lastUpdate} isLoading={isPolling} onRefresh={refresh} />
         {leaderboardWithRank.map((item) => (
           <LeaderboardItem key={item.id} item={item} />
         ))}
