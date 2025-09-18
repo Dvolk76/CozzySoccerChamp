@@ -13,6 +13,7 @@ export interface Env {
   CORS_ORIGIN: string;
   NODE_ENV: string;
   LOG_LEVEL: string;
+  PAGES_HOST?: string; // e.g. 14309aa5.cozzysoccerchamp.pages.dev
 }
 
 // Create logger for Workers environment
@@ -131,7 +132,29 @@ export default {
         return await handleApiRoute(request, env, logger, corsHeaders, cachedDataService, authResult.user);
       }
 
-      // Default: serve static files message
+      // Default: proxy static assets from Cloudflare Pages to bypass ISP blocks
+      const pagesHost = env.PAGES_HOST;
+      if (pagesHost) {
+        const targetUrl = new URL(request.url);
+        targetUrl.hostname = pagesHost;
+        targetUrl.protocol = 'https:';
+        const proxied = await fetch(targetUrl.toString(), {
+          headers: {
+            'User-Agent': request.headers.get('User-Agent') || '',
+            'Accept': request.headers.get('Accept') || '*/*',
+          },
+          cf: { cacheEverything: true },
+        });
+        // Stream response with CORS
+        return new Response(proxied.body, {
+          status: proxied.status,
+          headers: {
+            ...Object.fromEntries(proxied.headers.entries()),
+            ...corsHeaders,
+          },
+        });
+      }
+
       return new Response('Static files are served by Cloudflare Pages', {
         headers: {
           'Content-Type': 'text/plain',

@@ -9,5 +9,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    target: ['es2018', 'safari13'],
+    cssTarget: 'safari13',
+    sourcemap: false,
   },
 })
