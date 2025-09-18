@@ -35,20 +35,24 @@ export function useMatchesUiState() {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const toggleGroup = useCallback((groupName: string) => {
+    console.log('toggleGroup called with:', groupName, 'current state:', state.collapsedGroups.has(groupName));
     if (state.collapsedGroups.has(groupName)) {
       state.collapsedGroups.delete(groupName);
     } else {
       state.collapsedGroups.add(groupName);
     }
+    console.log('new collapsed groups:', Array.from(state.collapsedGroups));
     emit();
   }, []);
 
   const toggleDay = useCallback((dayKey: string) => {
+    console.log('toggleDay called with:', dayKey, 'current state:', state.collapsedDays.has(dayKey));
     if (state.collapsedDays.has(dayKey)) {
       state.collapsedDays.delete(dayKey);
     } else {
       state.collapsedDays.add(dayKey);
     }
+    console.log('new collapsed days:', Array.from(state.collapsedDays));
     emit();
   }, []);
 
