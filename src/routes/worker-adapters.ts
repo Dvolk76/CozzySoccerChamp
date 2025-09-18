@@ -223,6 +223,56 @@ export async function adminHandler(
       }
     }
     
+    // Handle user predictions endpoint: /api/admin/users/:userId/predictions
+    if (path.match(/^\/api\/admin\/users\/[^\/]+\/predictions$/) && request.method === 'GET') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const pathParts = path.split('/');
+        const userId = pathParts[4]; // /api/admin/users/{userId}/predictions
+        
+        if (!userId) {
+          return new Response(JSON.stringify({ error: 'USER_ID_REQUIRED' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+        if (!targetUser) {
+          return new Response(JSON.stringify({ error: 'USER_NOT_FOUND' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const predictions = await prisma.prediction.findMany({
+          where: { userId },
+          include: { match: true },
+          orderBy: { match: { kickoffAt: 'asc' } }
+        });
+
+        const matches = await prisma.match.findMany({
+          orderBy: { kickoffAt: 'asc' }
+        });
+
+        return new Response(JSON.stringify({ user: targetUser, predictions, matches }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to get user predictions');
+        return new Response(JSON.stringify({ error: 'Failed to get user predictions' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    
     return new Response(JSON.stringify({ 
       message: 'Admin endpoint not found',
       path,
