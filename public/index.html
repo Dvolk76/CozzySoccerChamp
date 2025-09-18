@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cozy Soccer Champ</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; }
+      .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; max-width: 520px; }
+      button { padding: 10px 14px; border-radius: 8px; border: 0; background:#1a73e8; color:#fff; cursor:pointer; }
+      button.secondary { background:#00a884; }
+      .row { display:flex; gap:8px; margin-top:10px; }
+      input { padding: 8px; border:1px solid #ccc; border-radius:8px; width:100%; }
+      pre { background:#f6f8fa; padding:10px; border-radius:8px; overflow:auto; }
+    </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Cozy Soccer Champ</h2>
+      <p>Мини-страница для проверки связи с сервером и Telegram initData.</p>
+      <div class="row" id="debugInfo">
+        <b>Диагностика:</b> <span id="diagStatus">...</span>
+      </div>
+      <div class="row">
+        <button id="btnPing">Пинг /health</button>
+        <button id="btnMe">Проверить авторизацию (/api/me)</button>
+        <button id="btnClaim" class="secondary">Стать админом</button>
+      </div>
+      <div class="row">
+        <button id="btnSync">Синхронизировать календарь (CL)</button>
+      </div>
+      <h4>Ответ:</h4>
+      <pre id="out">Загрузка...</pre>
+    </div>
+
+    <script>
+      // Debug info
+      const diagStatus = document.getElementById('diagStatus');
+      const out = document.getElementById('out');
+      
+      // Telegram WebApp
+      let tg;
+      try {
+        tg = window.Telegram?.WebApp;
+        tg?.ready();
+        tg?.expand();
+        diagStatus.textContent = "TG WebApp: OK";
+      } catch (e) {
+        diagStatus.textContent = `TG WebApp Error: ${e}`;
+      }
+
+      function initHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        if (tg?.initData) headers['X-Telegram-Init-Data'] = tg.initData;
+        return headers;
+      }
+
+      async function call(path, body) {
+        try {
+          diagStatus.textContent = `Запрос: ${path}...`;
+          out.textContent = "Отправка запроса...";
+          
+          const headers = initHeaders();
+          out.textContent += `\nЗаголовки: ${JSON.stringify(headers)}`;
+          
+          const res = await fetch(path, {
+            method: body ? 'POST' : 'GET',
+            headers: headers,
+            body: body ? JSON.stringify(body) : undefined,
+          });
+          
+          const text = await res.text();
+          diagStatus.textContent = `Ответ: ${res.status} ${res.statusText}`;
+          out.textContent = `${res.status} ${res.statusText}\n${text}`;
+        } catch (e) {
+          diagStatus.textContent = `Ошибка: ${e.name}`;
+          out.textContent = `NETWORK ERROR: ${e.message || e}\n\nВозможные причины:\n- CORS блокировка\n- Сервер не отвечает\n- Туннель закрыт`;
+        }
+      }
+
+      // Show initial state for debugging
+      const hasTG = !!tg;
+      const hasInit = !!tg?.initData && tg.initData.length > 0;
+      out.textContent = JSON.stringify({ 
+        hasTG, 
+        hasInit, 
+        initDataLen: tg?.initData?.length || 0,
+        userAgent: navigator.userAgent,
+        href: window.location.href
+      }, null, 2);
+      
+      if (!hasInit) {
+        out.textContent += "\n\nВНИМАНИЕ: Нет initData от Telegram!\nОткройте страницу из Telegram через кнопку Web App.";
+      }
+
+      // Add click handlers with error handling
+      try {
+        document.getElementById('btnPing').onclick = () => call('/health');
+        document.getElementById('btnMe').onclick = () => call('/api/me');
+        document.getElementById('btnClaim').onclick = () => call('/api/admin/claim', { password: 'KukuruznoePoleEksperimentov' });
+        document.getElementById('btnSync').onclick = () => {
+          const season = new Date().getUTCFullYear();
+          return call('/api/admin/sync', { season });
+        };
+      } catch (e) {
+        diagStatus.textContent = `Button Error: ${e}`;
+      };
+    </script>
+  </body>
+  </html>
+
+

@@ -1,0 +1,71 @@
+import { registerAdminRoutes } from './admin.js';
+import { registerPredictionRoutes } from './predictions.js';
+import { registerMatchRoutes } from './matches.js';
+import { registerLeaderboardRoutes } from './leaderboard.js';
+import { registerRecalcRoutes } from './recalc.js';
+export function registerRoutes(app, prisma, logger) {
+    // Auth probe: returns current user from initDataAuth
+    app.get('/api/me', (req, res) => {
+        const user = req.authUser;
+        if (!user)
+            return res.status(401).json({ error: 'NO_AUTH' });
+        res.json({ user });
+    });
+    // Matches public list (cached) with user predictions
+    app.get('/api/matches', async (req, res) => {
+        try {
+            const user = req.authUser;
+            const cachedDataService = req.cachedDataService;
+            if (!cachedDataService) {
+                // Fallback to direct DB query if cache service not available
+                const matches = await prisma.match.findMany({ orderBy: { kickoffAt: 'asc' } });
+                // If user is authenticated, include their predictions
+                if (user) {
+                    const userPredictions = await prisma.prediction.findMany({
+                        where: { userId: user.id },
+                        select: { matchId: true, predHome: true, predAway: true }
+                    });
+                    const predictionsMap = userPredictions.reduce((acc, pred) => {
+                        acc[pred.matchId] = { predHome: pred.predHome, predAway: pred.predAway };
+                        return acc;
+                    }, {});
+                    const matchesWithPredictions = matches.map((match) => ({
+                        ...match,
+                        userPrediction: predictionsMap[match.id] || null
+                    }));
+                    return res.json({ matches: matchesWithPredictions });
+                }
+                return res.json({ matches });
+            }
+            const matches = await cachedDataService.getMatches();
+            // If user is authenticated, include their predictions
+            if (user) {
+                const userPredictions = await prisma.prediction.findMany({
+                    where: { userId: user.id },
+                    select: { matchId: true, predHome: true, predAway: true }
+                });
+                const predictionsMap = userPredictions.reduce((acc, pred) => {
+                    acc[pred.matchId] = { predHome: pred.predHome, predAway: pred.predAway };
+                    return acc;
+                }, {});
+                const matchesWithPredictions = matches.map((match) => ({
+                    ...match,
+                    userPrediction: predictionsMap[match.id] || null
+                }));
+                res.json({ matches: matchesWithPredictions });
+            }
+            else {
+                res.json({ matches });
+            }
+        }
+        catch (error) {
+            logger.error({ error }, 'Failed to get matches');
+            res.status(500).json({ error: 'Failed to get matches' });
+        }
+    });
+    registerAdminRoutes(app, prisma, logger);
+    registerPredictionRoutes(app, prisma, logger);
+    registerMatchRoutes(app, prisma, logger);
+    registerLeaderboardRoutes(app, prisma, logger);
+    registerRecalcRoutes(app, prisma, logger);
+}

@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  tg_user_id String   @unique
+  name       String
+  avatar     String?  // Telegram photo URL if provided via initData (optional snapshot)
+  role       Role     @default(USER)
+  createdAt  DateTime @default(now())
+
+  predictions Prediction[]
+  scores       Score[]
+  predictionHistories PredictionHistory[] @relation("UserHistory")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Match {
+  id         String   @id @default(cuid())
+  extId      String?  @unique // external id from football-data.org if available
+  stage      String
+  group      String?  // group code if applicable
+  leg        Int?     // 1 or 2 for two-legged ties
+  matchday   Int?     // tour number
+  homeTeam   String
+  awayTeam   String
+  kickoffAt  DateTime // stored in UTC
+  status     String   // per external API (e.g., SCHEDULED, LIVE, FINISHED, POSTPONED)
+  scoreHome  Int?
+  scoreAway  Int?
+
+  predictions Prediction[]
+  predictionHistories PredictionHistory[] @relation("MatchHistory")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Prediction {
+  id         String   @id @default(cuid())
+  userId     String
+  matchId    String
+  predHome   Int
+  predAway   Int
+  createdAt  DateTime @default(now())
+  lockedAt   DateTime?
+
+  user  User  @relation(fields: [userId], references: [id])
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@unique([userId, matchId])
+}
+
+model PredictionHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  matchId    String
+  predHome   Int
+  predAway   Int
+  createdAt  DateTime @default(now())
+
+  user  User  @relation("UserHistory",  fields: [userId], references: [id])
+  match Match @relation("MatchHistory", fields: [matchId], references: [id])
+}
+
+model Score {
+  id           String   @id @default(cuid())
+  userId       String
+  pointsTotal  Int      @default(0)
+  exactCount   Int      @default(0) // 5-point hits
+  diffCount    Int      @default(0) // 3-point hits
+  outcomeCount Int      @default(0) // 2-point hits
+  firstPredAt  DateTime? // earliest submission across all matches for tie-break
+  lastUpdated  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId])
+}
+
+
