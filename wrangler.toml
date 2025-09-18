@@ -21,7 +21,7 @@ database_id = "065be909-9a91-4982-94e5-d5e44b3caf31"
 NODE_ENV = "production"
 CORS_ORIGIN = "*"
 LOG_LEVEL = "info"
-PAGES_HOST = "f01f006d.cozzysoccerchamp.pages.dev"
+PAGES_HOST = "cozzysoccerchamp.pages.dev"
 
 # For storing sensitive variables, use:
 # wrangler secret put SESSION_SECRET
