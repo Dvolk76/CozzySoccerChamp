@@ -1,0 +1,27 @@
+name = "cozy-soccer-champ"
+main = "dist/worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+name = "cozy-soccer-champ-prod"
+
+[env.staging]
+name = "cozy-soccer-champ-staging"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "cozy-soccer-champ-db"
+database_id = "065be909-9a91-4982-94e5-d5e44b3caf31"
+
+# Environment variables will be set via wrangler secret put
+[vars]
+NODE_ENV = "production"
+CORS_ORIGIN = "https://your-pages-domain.pages.dev"
+LOG_LEVEL = "info"
+
+# For storing sensitive variables, use:
+# wrangler secret put SESSION_SECRET
+# wrangler secret put TELEGRAM_BOT_TOKEN
+# wrangler secret put FOOTBALL_API_TOKEN

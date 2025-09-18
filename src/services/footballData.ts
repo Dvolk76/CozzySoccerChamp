@@ -10,7 +10,7 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number) 
   const url = `${BASE_URL}/competitions/CL/matches?season=${season}`;
   const res = await fetch(url, { headers: { 'X-Auth-Token': token } });
   if (!res.ok) throw new Error(`football-data error ${res.status}`);
-  const data = await res.json();
+  const data = await res.json() as any;
 
   // Upsert matches
   const tasks: Promise<any>[] = [];
