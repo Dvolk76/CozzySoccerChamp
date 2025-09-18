@@ -18,7 +18,7 @@ database_id = "065be909-9a91-4982-94e5-d5e44b3caf31"
 # Environment variables will be set via wrangler secret put
 [vars]
 NODE_ENV = "production"
-CORS_ORIGIN = "*"
+CORS_ORIGIN = "https://cozzysoccerchamp.pages.dev,*"
 LOG_LEVEL = "info"
 
 # For storing sensitive variables, use:
