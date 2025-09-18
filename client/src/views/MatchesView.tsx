@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { MatchCard } from '../components/MatchCard';
 import { useMatches } from '../hooks/useData';
 import type { Match } from '../types';
+import { useMatchesUiState } from '../hooks/useMatchesUiState';
 
 export function MatchesView() {
   const { matches, loading, error, refresh, isPolling, lastUpdate } = useMatches(true);
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
-  const [initializedDays, setInitializedDays] = useState(false);
+  const { collapsedGroups, collapsedDays, initializedDays, setCollapsedGroups, setCollapsedDays, setInitializedDays, toggleGroup, toggleDay } = useMatchesUiState();
 
   const translateStage = (stage: string) => {
     const stageTranslations: Record<string, string> = {
@@ -224,27 +223,7 @@ export function MatchesView() {
 
   const groupedMatches = groupMatches();
 
-  const toggleGroup = (groupName: string) => {
-    const newCollapsed = new Set(collapsedGroups);
-    
-    if (newCollapsed.has(groupName)) {
-      newCollapsed.delete(groupName);
-    } else {
-      newCollapsed.add(groupName);
-    }
-    
-    setCollapsedGroups(newCollapsed);
-  };
-
-  const toggleDay = (dayKey: string) => {
-    const newCollapsed = new Set(collapsedDays);
-    if (newCollapsed.has(dayKey)) {
-      newCollapsed.delete(dayKey);
-    } else {
-      newCollapsed.add(dayKey);
-    }
-    setCollapsedDays(newCollapsed);
-  };
+  // toggle handlers moved to UI store
 
   return (
     <div>

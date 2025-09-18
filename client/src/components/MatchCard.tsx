@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import type { Match } from '../types';
 
@@ -6,7 +6,7 @@ interface MatchCardProps {
   match: Match;
 }
 
-export function MatchCard({ match }: MatchCardProps) {
+function MatchCardInner({ match }: MatchCardProps) {
   const initialHasPrediction = match.userPrediction !== null && match.userPrediction !== undefined;
   const [hasLocalPrediction, setHasLocalPrediction] = useState(initialHasPrediction);
   const hasExistingPrediction = hasLocalPrediction || initialHasPrediction;
@@ -23,6 +23,27 @@ export function MatchCard({ match }: MatchCardProps) {
   const kickoffTime = new Date(match.kickoffAt);
   const isLocked = new Date() >= kickoffTime;
   const hasScore = match.scoreHome !== null && match.scoreAway !== null;
+
+  // Track previous score to highlight changes
+  const prevScoreRef = useRef<{ h?: number; a?: number } | null>(null);
+  const [scoreChanged, setScoreChanged] = useState<null | 'home' | 'away' | 'both'>(null);
+  useEffect(() => {
+    const prev = prevScoreRef.current;
+    const currH = match.scoreHome;
+    const currA = match.scoreAway;
+    if (prev) {
+      const homeChanged = prev.h !== currH && currH !== undefined;
+      const awayChanged = prev.a !== currA && currA !== undefined;
+      if (homeChanged && awayChanged) setScoreChanged('both');
+      else if (homeChanged) setScoreChanged('home');
+      else if (awayChanged) setScoreChanged('away');
+      if (homeChanged || awayChanged) {
+        const t = setTimeout(() => setScoreChanged(null), 1200);
+        return () => clearTimeout(t);
+      }
+    }
+    prevScoreRef.current = { h: currH, a: currA };
+  }, [match.scoreHome, match.scoreAway]);
 
   // Обновляем значения прогноза при изменении данных матча
   useEffect(() => {
@@ -182,7 +203,7 @@ export function MatchCard({ match }: MatchCardProps) {
       
       <div className="match-teams">
         <div className="team">{match.homeTeam}</div>
-        <div className="score">
+        <div className={`score ${scoreChanged ? `score-changed-${scoreChanged}` : ''}`}>
           {hasScore ? `${match.scoreHome}:${match.scoreAway}` : 'vs'}
         </div>
         <div className="team">{match.awayTeam}</div>
@@ -314,3 +335,20 @@ export function MatchCard({ match }: MatchCardProps) {
     </div>
   );
 }
+
+// Memoize to avoid rerender unless relevant match fields change
+export const MatchCard = memo(MatchCardInner, (prevProps, nextProps) => {
+  const p = prevProps.match; const n = nextProps.match;
+  return (
+    p.id === n.id &&
+    p.scoreHome === n.scoreHome &&
+    p.scoreAway === n.scoreAway &&
+    p.status === n.status &&
+    p.kickoffAt === n.kickoffAt &&
+    p.homeTeam === n.homeTeam &&
+    p.awayTeam === n.awayTeam &&
+    p.stage === n.stage &&
+    p.matchday === n.matchday &&
+    JSON.stringify(p.userPrediction) === JSON.stringify(n.userPrediction)
+  );
+});

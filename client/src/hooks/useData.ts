@@ -1,18 +1,51 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api';
 import { useDataPolling } from './useAutoRefresh';
+import type { Match } from '../types';
 
 // Custom hook for matches data with auto-refresh
 export function useMatches(autoRefresh: boolean = true) {
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const prevMatchesRef = useRef<Map<string, Match>>(new Map());
 
   const fetchMatches = useCallback(async () => {
     try {
       setError(null);
       const data = await api.getMatches();
-      setMatches(data.matches || []);
+      const incoming: Match[] = data.matches || [];
+
+      // Build new map and merge by id to preserve stable references if unchanged
+      const nextMap = new Map<string, Match>();
+      const prevMap = prevMatchesRef.current;
+
+      for (const m of incoming) {
+        const prev = prevMap.get(m.id);
+        if (prev) {
+          // Shallow compare fields we render often; if equal, reuse prev instance
+          const same =
+            prev.scoreHome === m.scoreHome &&
+            prev.scoreAway === m.scoreAway &&
+            prev.status === m.status &&
+            prev.kickoffAt === m.kickoffAt &&
+            prev.homeTeam === m.homeTeam &&
+            prev.awayTeam === m.awayTeam &&
+            prev.stage === m.stage &&
+            prev.matchday === m.matchday &&
+            JSON.stringify(prev.userPrediction) === JSON.stringify(m.userPrediction);
+
+          nextMap.set(m.id, same ? prev : { ...prev, ...m });
+        } else {
+          nextMap.set(m.id, m);
+        }
+      }
+
+      // Keep the original order from incoming
+      const mergedList = incoming.map(m => nextMap.get(m.id)!) as Match[];
+
+      prevMatchesRef.current = nextMap;
+      setMatches(mergedList);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch matches');
       console.error('Failed to fetch matches:', err);
