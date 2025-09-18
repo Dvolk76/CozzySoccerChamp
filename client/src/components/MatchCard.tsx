@@ -201,12 +201,8 @@ function MatchCardInner({ match }: MatchCardProps) {
   return (
     <div className="match-card">
       <div className="match-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="match-stage">{translateStage(match.stage)}</span>
-          {status.class !== 'scheduled' && (
-            <span className={`match-status ${status.class}`}>{status.text}</span>
-          )}
-        </div>
+        <span className="match-stage">{translateStage(match.stage)}</span>
+        <span className={`match-status ${status.class}`}>{status.text}</span>
         <span className="match-date">{formatDate(kickoffTime)}</span>
       </div>
       
