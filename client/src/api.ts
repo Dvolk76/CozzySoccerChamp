@@ -30,7 +30,8 @@ class ApiClient {
       const response = await fetch(url.toString(), {
         ...options,
         mode: 'cors',
-        credentials: 'include',
+        // We don't rely on cookies/session; avoid credentialed CORS for wider browser/WebView support
+        credentials: 'omit',
         headers: {
           ...this.getHeaders(),
           ...options.headers,
