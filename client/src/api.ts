@@ -16,26 +16,44 @@ class ApiClient {
   }
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
-    // Build URL and also pass initData via query as a fallback (some proxies can drop headers)
-    const url = new URL(`${API_BASE}${path}`, window.location.origin);
-    if (WebApp.initData) {
-      url.searchParams.set('initData', WebApp.initData);
+    try {
+      // Build URL and also pass initData via query as a fallback (some proxies can drop headers)
+      const url = new URL(`${API_BASE}${path}`, window.location.origin);
+      if (WebApp.initData) {
+        url.searchParams.set('initData', WebApp.initData);
+      }
+
+      console.log('Making API request to:', url.toString());
+      
+      const response = await fetch(url.toString(), {
+        ...options,
+        mode: 'cors',
+        credentials: 'include',
+        headers: {
+          ...this.getHeaders(),
+          ...options.headers,
+        },
+      });
+
+      console.log('API response status:', response.status);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('API error:', response.status, error);
+        throw new Error(`API Error: ${response.status} ${error}`);
+      }
+
+      const data = await response.json();
+      console.log('API response data:', data);
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch:', error);
+      // For development, show more detailed error
+      if (API_BASE.includes('localhost')) {
+        throw error;
+      }
+      throw new Error('Network error. Please check your connection.');
     }
-
-    const response = await fetch(url.toString(), {
-      ...options,
-      headers: {
-        ...this.getHeaders(),
-        ...options.headers,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`API Error: ${response.status} ${error}`);
-    }
-
-    return response.json();
   }
 
   async get<T>(path: string): Promise<T> {

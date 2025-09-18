@@ -97,7 +97,7 @@ export default {
       // API routes
       if (url.pathname.startsWith('/api/')) {
         // Telegram auth for API routes
-        const authFunction = await initDataAuth(prisma, logger);
+        const authFunction = await initDataAuth(prisma, logger, env);
         const authResult = await authFunction(request);
         if (authResult instanceof Response) {
           // Auth failed, return error response with CORS headers
