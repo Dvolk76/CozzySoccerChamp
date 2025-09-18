@@ -24,8 +24,17 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
     const matchday = m.matchday ?? null;
     const status = m.status ?? 'SCHEDULED';
 
-    const scoreHome = m.score?.fullTime?.home ?? null;
-    const scoreAway = m.score?.fullTime?.away ?? null;
+    // Для лайв матчей берем счет из fullTime, если его нет - из halfTime
+    // Для завершенных матчей всегда fullTime
+    let scoreHome = m.score?.fullTime?.home ?? null;
+    let scoreAway = m.score?.fullTime?.away ?? null;
+    
+    // Если fullTime счета нет, но есть halfTime - используем его для лайв матчей
+    if ((scoreHome === null || scoreAway === null) && 
+        (status === 'LIVE' || status === 'IN_PLAY' || status === 'PAUSED')) {
+      scoreHome = m.score?.halfTime?.home ?? scoreHome;
+      scoreAway = m.score?.halfTime?.away ?? scoreAway;
+    }
 
     tasks.push(
       prisma.match.upsert({
