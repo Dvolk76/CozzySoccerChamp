@@ -4,18 +4,11 @@ import WebApp from '@twa-dev/sdk'
 import App from './App.tsx'
 import './index.css'
 
-// Initialize Telegram WebApp safely
-try {
-  WebApp.ready()
-  WebApp.expand()
-  
-  // Hide loading indicator after initialization
-  setTimeout(() => {
-    WebApp.MainButton.hide()
-  }, 1000)
-} catch (error) {
-  console.log('Running outside Telegram WebApp environment')
-}
+// Initialize Telegram WebApp safely - moved to App.tsx to avoid double initialization
+console.log('Loading in environment:', {
+  isTelegram: !!window.Telegram?.WebApp,
+  userAgent: navigator.userAgent
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
