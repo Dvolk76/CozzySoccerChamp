@@ -15,8 +15,14 @@ export async function initDataAuth(
       const initDataRaw = request.headers.get('X-Telegram-Init-Data') || 
                          url.searchParams.get('initData') || '';
       
+      logger.info('Auth check:', { 
+        hasInitData: !!initDataRaw, 
+        bypassEnv: env?.TG_INIT_BYPASS,
+        bypassProcess: process.env.TG_INIT_BYPASS 
+      });
+      
       // Dev bypass: allow access without init data when TG_INIT_BYPASS=1  
-      if (!initDataRaw && (process.env.TG_INIT_BYPASS === '1' || env.TG_INIT_BYPASS === '1')) {
+      if (!initDataRaw && (env?.TG_INIT_BYPASS === '1' || process.env.TG_INIT_BYPASS === '1')) {
         logger.info('Development mode: creating test user');
         const testUser = await prisma.user.upsert({
           where: { tg_user_id: 'dev_user_123' },
@@ -31,7 +37,7 @@ export async function initDataAuth(
       }
       
       if (!initDataRaw) {
-        if (process.env.TG_INIT_BYPASS === '1' || env.TG_INIT_BYPASS === '1') {
+        if (env?.TG_INIT_BYPASS === '1' || process.env.TG_INIT_BYPASS === '1') {
           logger.warn('DEV bypass: NO_INIT_DATA, creating test user');
           const testUser = await prisma.user.upsert({
             where: { tg_user_id: 'dev_user_123' },
@@ -48,7 +54,7 @@ export async function initDataAuth(
 
       const ok = verifyInitData(initDataRaw, env.TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || '');
       if (!ok) {
-        if (process.env.TG_INIT_BYPASS === '1' || env.TG_INIT_BYPASS === '1') {
+        if (env?.TG_INIT_BYPASS === '1' || process.env.TG_INIT_BYPASS === '1') {
           logger.warn('DEV bypass: BAD_INIT_DATA, skipping verification');
         } else {
           return new Response(JSON.stringify({ error: 'BAD_INIT_DATA' }), {

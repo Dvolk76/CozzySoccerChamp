@@ -24,6 +24,8 @@ class ApiClient {
       }
 
       console.log('Making API request to:', url.toString());
+      console.log('API_BASE:', API_BASE);
+      console.log('WebApp.initData available:', !!WebApp.initData);
       
       const response = await fetch(url.toString(), {
         ...options,
@@ -48,6 +50,20 @@ class ApiClient {
       return data;
     } catch (error) {
       console.error('Failed to fetch:', error);
+      
+      // More specific error handling
+      if (error instanceof Error) {
+        if (error.message.includes('CORS')) {
+          throw new Error('CORS error - check API configuration');
+        }
+        if (error.message.includes('401')) {
+          throw new Error('Authentication required - open in Telegram');
+        }
+        if (error.message.includes('500')) {
+          throw new Error('Server error - try again later');
+        }
+      }
+      
       // For development, show more detailed error
       if (API_BASE.includes('localhost')) {
         throw error;
