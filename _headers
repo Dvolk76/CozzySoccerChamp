@@ -1,0 +1,8 @@
+# Allow Telegram WebApp to display the site
+/*
+  X-Content-Type-Options: nosniff
+
+# Protect API endpoints only
+/api/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
