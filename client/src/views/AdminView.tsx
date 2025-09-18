@@ -70,9 +70,10 @@ export function AdminView({ onEditUserPredictions }: AdminViewProps = {}) {
     setWiping(true);
     setError(null);
     try {
-      const response = await api.wipeUsers(password);
-      setMessage(`Удалено пользователей: ${response.deletedUsers}`);
-      setTimeout(() => setMessage(null), 3000);
+      // const response = await api.wipeUsers(password);
+      // setMessage(`Удалено пользователей: ${response.deletedUsers}`);
+      setError('Функция удаления пользователей отключена в продакшене');
+      setTimeout(() => setError(null), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка удаления пользователей');
     } finally {
