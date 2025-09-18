@@ -174,7 +174,8 @@ export class CachedDataService {
   constructor(
     private cache: DataCache,
     private prisma: PrismaClient,
-    private logger: { info: Function; warn: Function; error: Function }
+    private logger: { info: Function; warn: Function; error: Function },
+    private env?: any
   ) {}
 
   /**
@@ -281,7 +282,7 @@ export class CachedDataService {
    * Sync matches from external API with rate limiting protection
    */
   async syncMatchesFromAPI(season?: number) {
-    const currentSeason = season || new Date().getFullYear();
+    const currentSeason = season || 2025; // Current Champions League season 2025-26
     const cacheKey = `api_sync_${currentSeason}`;
     
     return this.cache.get(
@@ -290,7 +291,7 @@ export class CachedDataService {
         this.logger.info({ season: currentSeason }, 'Syncing matches from external API');
         
         try {
-          const result = await syncChampionsLeague(this.prisma, currentSeason);
+          const result = await syncChampionsLeague(this.prisma, currentSeason, this.env);
           
           // Invalidate matches cache after API sync
           this.cache.invalidate('matches');

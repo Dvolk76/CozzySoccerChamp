@@ -63,6 +63,11 @@ const handleOptions = (request: Request, env: Env) => {
   });
 };
 
+// Global cache and services for Workers persistence
+let globalPrisma: any = null;
+let globalCache: any = null;
+let globalCachedDataService: any = null;
+
 // Main request handler
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -75,9 +80,20 @@ export default {
     }
 
     try {
-      const prisma = createPrismaClient(env);
-      const cache = initializeCache(prisma, logger);
-      const cachedDataService = new CachedDataService(cache, prisma, logger);
+      // Reuse global instances for performance and state persistence
+      if (!globalPrisma) {
+        globalPrisma = createPrismaClient(env);
+      }
+      if (!globalCache) {
+        globalCache = initializeCache(globalPrisma, logger);
+      }
+      if (!globalCachedDataService) {
+        globalCachedDataService = new CachedDataService(globalCache, globalPrisma, logger, env);
+      }
+
+      const prisma = globalPrisma;
+      const cache = globalCache;
+      const cachedDataService = globalCachedDataService;
 
       // Add CORS headers to all responses
       const origin = request.headers.get('Origin');
@@ -165,7 +181,12 @@ async function handleApiRoute(
   try {
     let response: Response;
 
-    if (path.startsWith('/api/matches')) {
+    if (path === '/api/me') {
+      // Return current user info
+      response = new Response(JSON.stringify({ user }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } else if (path.startsWith('/api/matches')) {
       response = await matchesHandler(request, env, logger, cachedDataService, user);
     } else if (path.startsWith('/api/predictions')) {
       response = await predictionsHandler(request, env, logger, cachedDataService, user);

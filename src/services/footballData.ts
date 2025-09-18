@@ -2,9 +2,9 @@ import type { PrismaClient } from '@prisma/client';
 
 const BASE_URL = 'https://api.football-data.org/v4';
 
-export async function syncChampionsLeague(prisma: PrismaClient, season: number) {
-  const token = process.env.FOOTBALL_DATA_API_TOKEN;
-  if (!token) throw new Error('FOOTBALL_DATA_API_TOKEN required');
+export async function syncChampionsLeague(prisma: PrismaClient, season: number, env?: any) {
+  const token = env?.FOOTBALL_API_TOKEN || env?.FOOTBALL_DATA_API_TOKEN || process.env.FOOTBALL_API_TOKEN || process.env.FOOTBALL_DATA_API_TOKEN;
+  if (!token) throw new Error('FOOTBALL_API_TOKEN or FOOTBALL_DATA_API_TOKEN required');
 
   // Competition code for UCL is usually CL
   const url = `${BASE_URL}/competitions/CL/matches?season=${season}`;

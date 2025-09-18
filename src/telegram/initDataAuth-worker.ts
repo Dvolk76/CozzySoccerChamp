@@ -21,9 +21,9 @@ export async function initDataAuth(
         bypassProcess: process.env.TG_INIT_BYPASS 
       });
       
-      // Dev bypass: allow access without init data when TG_INIT_BYPASS=1  
-      if (!initDataRaw && (env?.TG_INIT_BYPASS === '1' || process.env.TG_INIT_BYPASS === '1')) {
-        logger.info('Development mode: creating test user');
+      // Dev bypass: allow access when TG_INIT_BYPASS=1  
+      if (env?.TG_INIT_BYPASS === '1' || process.env.TG_INIT_BYPASS === '1') {
+        logger.info('Development mode: creating test user', { hasInitData: !!initDataRaw });
         const testUser = await prisma.user.upsert({
           where: { tg_user_id: 'dev_user_123' },
           create: { 
@@ -37,15 +37,6 @@ export async function initDataAuth(
       }
       
       if (!initDataRaw) {
-        if (env?.TG_INIT_BYPASS === '1' || process.env.TG_INIT_BYPASS === '1') {
-          logger.warn('DEV bypass: NO_INIT_DATA, creating test user');
-          const testUser = await prisma.user.upsert({
-            where: { tg_user_id: 'dev_user_123' },
-            create: { tg_user_id: 'dev_user_123', name: 'Test User', avatar: undefined },
-            update: {},
-          });
-          return { user: testUser };
-        }
         return new Response(JSON.stringify({ error: 'NO_INIT_DATA' }), {
           status: 401,
           headers: { 'Content-Type': 'application/json' },
@@ -89,7 +80,20 @@ export async function initDataAuth(
 
       return { user: dbUser };
     } catch (err) {
-      logger.error({ err }, 'initDataAuth error');
+      logger.error({ err, stack: err instanceof Error ? err.stack : 'Unknown' }, 'initDataAuth error');
+      
+      // In dev mode, return more detailed error
+      if (env?.TG_INIT_BYPASS === '1' || process.env.TG_INIT_BYPASS === '1') {
+        return new Response(JSON.stringify({ 
+          error: 'INITDATA_ERROR', 
+          details: err instanceof Error ? err.message : 'Unknown error',
+          devMode: true
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      
       return new Response(JSON.stringify({ error: 'INITDATA_ERROR' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
