@@ -178,6 +178,20 @@ export async function adminHandler(
       });
     }
     
+    if (path === '/api/admin/cache-stats' && request.method === 'GET') {
+      if (!cachedDataService) {
+        return new Response(JSON.stringify({ error: 'Cache service not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      const stats = cachedDataService.getStats();
+      return new Response(JSON.stringify({ stats }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     return new Response(JSON.stringify({ 
       message: 'Admin endpoint not found',
       path,
