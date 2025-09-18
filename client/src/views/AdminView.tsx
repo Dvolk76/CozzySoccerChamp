@@ -217,17 +217,19 @@ export function AdminView({ onEditUserPredictions }: AdminViewProps = {}) {
                     users.map(u => (
                       <div key={u.id} className="user-item">
                         <div className="user-info">
-                          <span className="user-name">{u.name}</span>
+                          {onEditUserPredictions ? (
+                            <span 
+                              className="user-name clickable"
+                              onClick={() => onEditUserPredictions(u.id)}
+                              style={{ cursor: 'pointer', color: 'var(--tg-theme-button-color)' }}
+                            >
+                              {u.name}
+                            </span>
+                          ) : (
+                            <span className="user-name">{u.name}</span>
+                          )}
                           <span className="user-role">{u.role}</span>
                         </div>
-                        {onEditUserPredictions && (
-                          <button
-                            onClick={() => onEditUserPredictions(u.id)}
-                            className="edit-predictions-button"
-                          >
-                            Редактировать прогнозы
-                          </button>
-                        )}
                       </div>
                     ))
                   )}

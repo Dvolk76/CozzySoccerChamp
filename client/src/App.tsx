@@ -5,6 +5,7 @@ import { MatchesView } from './views/MatchesView';
 import { LeaderboardView } from './views/LeaderboardView';
 import { AdminView } from './views/AdminView';
 import { UserPredictionsView } from './views/UserPredictionsView';
+import { AdminMatchesView } from './views/AdminMatchesView';
 import { useUser } from './hooks/useUser';
 
 function App() {
@@ -84,7 +85,7 @@ function App() {
 
   const handleEditUserPredictions = (userId: string) => {
     setEditingUserId(userId);
-    setCurrentView('user-predictions');
+    setCurrentView('admin-matches');
   };
 
   const handleBackToAdmin = () => {
@@ -97,6 +98,15 @@ function App() {
       if (currentView === 'user-predictions' && editingUserId) {
         return (
           <UserPredictionsView
+            userId={editingUserId}
+            onBack={handleBackToAdmin}
+          />
+        );
+      }
+
+      if (currentView === 'admin-matches' && editingUserId) {
+        return (
+          <AdminMatchesView
             userId={editingUserId}
             onBack={handleBackToAdmin}
           />
@@ -142,7 +152,7 @@ function App() {
       <div className="container">
         {renderView()}
       </div>
-      {currentView !== 'user-predictions' && (
+      {currentView !== 'user-predictions' && currentView !== 'admin-matches' && (
         <Navigation 
           currentView={currentView} 
           onNavigate={(view) => {
