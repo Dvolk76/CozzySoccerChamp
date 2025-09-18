@@ -125,7 +125,7 @@ export function AdminView({ onEditUserPredictions }: AdminViewProps = {}) {
       </div>
 
       <div className="container">
-        <LastSync lastUpdate={lastUpdate} isLoading={loadingStats} onRefresh={handleRefreshCache} />
+        <LastSync lastUpdate={lastUpdate} isLoading={loadingStats} />
         {!isAdmin && (
           <div className="match-card">
             <h3>Стать администратором</h3>

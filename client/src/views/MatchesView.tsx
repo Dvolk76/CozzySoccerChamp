@@ -228,7 +228,7 @@ export function MatchesView() {
 
   return (
     <div>
-      <LastSync lastUpdate={lastUpdate} isLoading={isPolling} onRefresh={refresh} />
+      <LastSync lastUpdate={lastUpdate} isLoading={isPolling} />
       {Object.entries(groupedMatches).map(([groupName, dayGroups]) => {
         const isGroupCollapsed = collapsedGroups.has(groupName);
         

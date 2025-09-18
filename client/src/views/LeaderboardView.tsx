@@ -40,7 +40,7 @@ export function LeaderboardView() {
 
     return (
       <div>
-        <LastSync lastUpdate={lastUpdate} isLoading={isPolling} onRefresh={refresh} />
+        <LastSync lastUpdate={lastUpdate} isLoading={isPolling} />
         {leaderboardWithRank.map((item) => (
           <LeaderboardItem key={item.id} item={item} />
         ))}
