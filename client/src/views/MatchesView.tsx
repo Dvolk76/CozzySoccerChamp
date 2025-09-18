@@ -160,7 +160,7 @@ export function MatchesView() {
     setCollapsedGroups(collapsedGroupsSet);
     setCollapsedDays(collapsedDaysSet);
     setInitializedDays(true);
-  }, [matches, initializedDays]);
+  }, [matches, initializedDays, setCollapsedGroups, setCollapsedDays, setInitializedDays]);
 
   if (loading) {
     return <div className="loading">Загрузка матчей...</div>;

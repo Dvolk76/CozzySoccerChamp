@@ -1,82 +1,93 @@
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 
 // In-memory UI store for Matches screen state (lives until page reload)
-type Subscriber = () => void;
-
 type MatchesUiState = {
   collapsedGroups: Set<string>;
   collapsedDays: Set<string>;
   initializedDays: boolean;
 };
 
-const state: MatchesUiState = {
+const globalState: MatchesUiState = {
   collapsedGroups: new Set<string>(),
   collapsedDays: new Set<string>(),
   initializedDays: false,
 };
 
-const subscribers = new Set<Subscriber>();
-
-function emit() {
-  subscribers.forEach((cb) => cb());
-}
-
-function subscribe(cb: Subscriber) {
-  subscribers.add(cb);
-  return () => subscribers.delete(cb);
-}
-
-function getSnapshot(): MatchesUiState {
-  return state;
-}
-
 export function useMatchesUiState() {
-  // Subscribe to store
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const [state, setState] = useState<MatchesUiState>(() => ({
+    collapsedGroups: new Set(globalState.collapsedGroups),
+    collapsedDays: new Set(globalState.collapsedDays),
+    initializedDays: globalState.initializedDays,
+  }));
+
+  // Синхронизируем локальное состояние с глобальным
+  useEffect(() => {
+    globalState.collapsedGroups = new Set(state.collapsedGroups);
+    globalState.collapsedDays = new Set(state.collapsedDays);
+    globalState.initializedDays = state.initializedDays;
+  }, [state]);
 
   const toggleGroup = useCallback((groupName: string) => {
-    if (state.collapsedGroups.has(groupName)) {
-      state.collapsedGroups.delete(groupName);
-    } else {
-      state.collapsedGroups.add(groupName);
-    }
-    emit();
+    setState(prevState => {
+      const newCollapsedGroups = new Set(prevState.collapsedGroups);
+      if (newCollapsedGroups.has(groupName)) {
+        newCollapsedGroups.delete(groupName);
+      } else {
+        newCollapsedGroups.add(groupName);
+      }
+      return {
+        ...prevState,
+        collapsedGroups: newCollapsedGroups,
+      };
+    });
   }, []);
 
   const toggleDay = useCallback((dayKey: string) => {
-    if (state.collapsedDays.has(dayKey)) {
-      state.collapsedDays.delete(dayKey);
-    } else {
-      state.collapsedDays.add(dayKey);
-    }
-    emit();
+    setState(prevState => {
+      const newCollapsedDays = new Set(prevState.collapsedDays);
+      if (newCollapsedDays.has(dayKey)) {
+        newCollapsedDays.delete(dayKey);
+      } else {
+        newCollapsedDays.add(dayKey);
+      }
+      return {
+        ...prevState,
+        collapsedDays: newCollapsedDays,
+      };
+    });
   }, []);
 
   const setCollapsedGroups = useCallback((groups: Set<string>) => {
-    state.collapsedGroups = new Set(groups);
-    emit();
+    setState(prevState => ({
+      ...prevState,
+      collapsedGroups: new Set(groups),
+    }));
   }, []);
 
   const setCollapsedDays = useCallback((days: Set<string>) => {
-    state.collapsedDays = new Set(days);
-    emit();
+    setState(prevState => ({
+      ...prevState,
+      collapsedDays: new Set(days),
+    }));
   }, []);
 
   const setInitializedDays = useCallback((v: boolean) => {
-    state.initializedDays = v;
-    emit();
+    setState(prevState => ({
+      ...prevState,
+      initializedDays: v,
+    }));
   }, []);
 
   return useMemo(() => ({
-    collapsedGroups: snapshot.collapsedGroups,
-    collapsedDays: snapshot.collapsedDays,
-    initializedDays: snapshot.initializedDays,
+    collapsedGroups: state.collapsedGroups,
+    collapsedDays: state.collapsedDays,
+    initializedDays: state.initializedDays,
     toggleGroup,
     toggleDay,
     setCollapsedGroups,
     setCollapsedDays,
     setInitializedDays,
-  }), [snapshot, toggleGroup, toggleDay, setCollapsedGroups, setCollapsedDays, setInitializedDays]);
+  }), [state, toggleGroup, toggleDay, setCollapsedGroups, setCollapsedDays, setInitializedDays]);
 }
 
 
