@@ -56,6 +56,7 @@ function MatchCardInner({ match }: MatchCardProps) {
   const getMatchStatus = () => {
     const now = new Date();
     const matchTime = new Date(match.kickoffAt);
+    const minutesFromKickoff = Math.max(0, Math.floor((now.getTime() - matchTime.getTime()) / 60000));
     
     // Обрабатываем все возможные статусы Football Data API v4
     // Полный список статусов: https://www.football-data.org/documentation/api
@@ -67,8 +68,14 @@ function MatchCardInner({ match }: MatchCardProps) {
       case 'IN_PLAY':
         return { text: 'В игре', class: 'live' };
       
-      case 'PAUSED':
-        return { text: 'Пауза', class: 'paused' };
+      case 'PAUSED': {
+        // На некоторых турнирах статусы могут зависать в PAUSED после окончания матча.
+        // Если прошло достаточно времени с начала (например, > 110 минут), считаем матч завершенным.
+        const shouldBeFinished = minutesFromKickoff > 110 || (hasScore && minutesFromKickoff > 95);
+        return shouldBeFinished
+          ? { text: 'Завершен', class: 'finished' }
+          : { text: 'Пауза', class: 'paused' };
+      }
       
       case 'FINISHED':
         return { text: 'Завершен', class: 'finished' };
