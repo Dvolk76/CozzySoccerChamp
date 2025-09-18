@@ -129,7 +129,7 @@ export default {
         }
 
         // Route handling with context
-        return await handleApiRoute(request, env, logger, corsHeaders, cachedDataService, authResult.user);
+        return await handleApiRoute(request, env, logger, corsHeaders, cachedDataService, authResult.user, prisma);
       }
 
       // Default: proxy static assets from Cloudflare Pages to bypass ISP blocks
@@ -187,7 +187,8 @@ async function handleApiRoute(
   logger: any,
   corsHeaders: Record<string, string>,
   cachedDataService: CachedDataService,
-  user: any
+  user: any,
+  prisma: any
 ): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -216,7 +217,7 @@ async function handleApiRoute(
     } else if (path.startsWith('/api/leaderboard')) {
       response = await leaderboardHandler(request, env, logger, cachedDataService, user);
     } else if (path.startsWith('/api/admin')) {
-      response = await adminHandler(request, env, logger, cachedDataService, user);
+      response = await adminHandler(request, env, logger, cachedDataService, user, prisma);
     } else if (path.startsWith('/api/recalc')) {
       response = await recalcHandler(request, env, logger, cachedDataService, user);
     } else {

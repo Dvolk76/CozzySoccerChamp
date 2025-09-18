@@ -132,7 +132,8 @@ export async function adminHandler(
   env: any, 
   logger: Logger,
   cachedDataService?: any,
-  user?: any
+  user?: any,
+  prisma?: any
 ): Promise<Response> {
   try {
     const url = new URL(request.url);
@@ -190,6 +191,36 @@ export async function adminHandler(
       return new Response(JSON.stringify({ stats }), {
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+    
+    if (path === '/api/admin/users' && request.method === 'GET') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const users = await prisma.user.findMany({
+          include: {
+            scores: true,
+            _count: {
+              select: { predictions: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        return new Response(JSON.stringify({ users }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to get users');
+        return new Response(JSON.stringify({ error: 'Failed to get users' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
     }
     
     return new Response(JSON.stringify({ 
