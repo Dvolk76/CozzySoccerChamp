@@ -14,29 +14,17 @@ function App() {
 
 
   useEffect(() => {
-    // Check if we're in Telegram environment
-    console.log('App.tsx - Telegram check:', {
-      telegram: window.Telegram,
-      webApp: window.Telegram?.WebApp,
-      initData: window.Telegram?.WebApp?.initData,
-      platform: window.Telegram?.WebApp?.platform
-    });
-
-    // Initialize Telegram WebApp only if available
-    if (window.Telegram?.WebApp) {
-      try {
-        WebApp.ready();
-        WebApp.expand();
-        
-        // Enable safe area handling for iOS
-        WebApp.enableClosingConfirmation();
-        
-        console.log('Telegram WebApp initialized successfully');
-      } catch (error) {
-        console.error('Failed to initialize Telegram WebApp:', error);
-      }
-    } else {
-      console.log('Running outside Telegram WebApp environment');
+    // Initialize Telegram WebApp safely
+    try {
+      WebApp.ready();
+      WebApp.expand();
+      
+      // Enable safe area handling for iOS
+      WebApp.enableClosingConfirmation();
+      
+      console.log('Telegram WebApp initialized successfully');
+    } catch (error) {
+      console.log('Running outside Telegram WebApp environment:', error);
     }
     
     // Set theme colors

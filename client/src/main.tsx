@@ -4,11 +4,7 @@ import WebApp from '@twa-dev/sdk'
 import App from './App.tsx'
 import './index.css'
 
-// Initialize Telegram WebApp safely - moved to App.tsx to avoid double initialization
-console.log('Loading in environment:', {
-  isTelegram: !!window.Telegram?.WebApp,
-  userAgent: navigator.userAgent
-})
+// Telegram WebApp will be initialized in App.tsx
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
