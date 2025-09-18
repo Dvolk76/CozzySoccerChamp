@@ -57,6 +57,9 @@ function MatchCardInner({ match }: MatchCardProps) {
     const now = new Date();
     const matchTime = new Date(match.kickoffAt);
     const minutesFromKickoff = Math.max(0, Math.floor((now.getTime() - matchTime.getTime()) / 60000));
+    // Conservative thresholds to account for halftime (≈15m), added time, and potential extra time (2x15 + short break)
+    const FINISH_MINUTES_HARD = 155;      // ~2h35m from kickoff (covers ET + stoppage)
+    const FINISH_MINUTES_WITH_SCORE = 135; // ~2h15m if we already have a score registered
     
     // Обрабатываем все возможные статусы Football Data API v4
     // Полный список статусов: https://www.football-data.org/documentation/api
@@ -69,12 +72,11 @@ function MatchCardInner({ match }: MatchCardProps) {
         return { text: 'В игре', class: 'live' };
       
       case 'PAUSED': {
-        // На некоторых турнирах статусы могут зависать в PAUSED после окончания матча.
-        // Если прошло достаточно времени с начала (например, > 110 минут), считаем матч завершенным.
-        const shouldBeFinished = minutesFromKickoff > 110 || (hasScore && minutesFromKickoff > 95);
-        return shouldBeFinished
-          ? { text: 'Завершен', class: 'finished' }
-          : { text: 'Пауза', class: 'paused' };
+        // Some feeds leave PAUSED long after FT. We consider halftime, added time and extra time.
+        if (minutesFromKickoff >= FINISH_MINUTES_HARD || (hasScore && minutesFromKickoff >= FINISH_MINUTES_WITH_SCORE)) {
+          return { text: 'Завершен', class: 'finished' };
+        }
+        return { text: 'Пауза', class: 'paused' };
       }
       
       case 'FINISHED':
