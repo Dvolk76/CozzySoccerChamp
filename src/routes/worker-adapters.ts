@@ -272,6 +272,155 @@ export async function adminHandler(
         });
       }
     }
+
+    // Handle POST /api/admin/users/:userId/predictions (create or update prediction)
+    if (path.match(/^\/api\/admin\/users\/[^\/]+\/predictions$/) && request.method === 'POST') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const pathParts = path.split('/');
+        const userId = pathParts[4]; // /api/admin/users/{userId}/predictions
+        
+        if (!userId) {
+          return new Response(JSON.stringify({ error: 'USER_ID_REQUIRED' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const body = await request.json() as any;
+        const { matchId, predHome, predAway } = body || {};
+        
+        if (!matchId || typeof predHome !== 'number' || typeof predAway !== 'number') {
+          return new Response(JSON.stringify({ error: 'BAD_INPUT' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+        if (!targetUser) {
+          return new Response(JSON.stringify({ error: 'USER_NOT_FOUND' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const match = await prisma.match.findUnique({ where: { id: matchId } });
+        if (!match) {
+          return new Response(JSON.stringify({ error: 'MATCH_NOT_FOUND' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Save current prediction to history if exists
+        const existing = await prisma.prediction.findUnique({ 
+          where: { userId_matchId: { userId, matchId } } 
+        });
+        
+        if (existing) {
+          await prisma.predictionHistory.create({
+            data: {
+              userId,
+              matchId,
+              predHome: existing.predHome,
+              predAway: existing.predAway,
+            },
+          });
+        }
+
+        // Create or update prediction
+        const prediction = await prisma.prediction.upsert({
+          where: { userId_matchId: { userId, matchId } },
+          create: { userId, matchId, predHome, predAway },
+          update: { predHome, predAway },
+          include: { match: true }
+        });
+
+        // Update firstPredAt for tie-break if needed
+        await prisma.score.upsert({
+          where: { userId },
+          create: { userId, firstPredAt: new Date() },
+          update: {
+            firstPredAt: !existing ? new Date() : undefined,
+          },
+        });
+
+        return new Response(JSON.stringify({ prediction }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to update user prediction');
+        return new Response(JSON.stringify({ error: 'UPDATE_PREDICTION_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // Handle DELETE /api/admin/users/:userId/predictions/:matchId
+    if (path.match(/^\/api\/admin\/users\/[^\/]+\/predictions\/[^\/]+$/) && request.method === 'DELETE') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const pathParts = path.split('/');
+        const userId = pathParts[4]; // /api/admin/users/{userId}/predictions/{matchId}
+        const matchId = pathParts[6];
+        
+        if (!userId || !matchId) {
+          return new Response(JSON.stringify({ error: 'BAD_INPUT' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const existing = await prisma.prediction.findUnique({ 
+          where: { userId_matchId: { userId, matchId } } 
+        });
+        
+        if (!existing) {
+          return new Response(JSON.stringify({ error: 'PREDICTION_NOT_FOUND' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Save to history before deleting
+        await prisma.predictionHistory.create({
+          data: {
+            userId,
+            matchId,
+            predHome: existing.predHome,
+            predAway: existing.predAway,
+          },
+        });
+
+        await prisma.prediction.delete({
+          where: { userId_matchId: { userId, matchId } }
+        });
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to delete user prediction');
+        return new Response(JSON.stringify({ error: 'DELETE_PREDICTION_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
     
     return new Response(JSON.stringify({ 
       message: 'Admin endpoint not found',
