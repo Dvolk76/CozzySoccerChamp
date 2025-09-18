@@ -4,22 +4,25 @@ import type { PrismaClient } from '@prisma/client';
 type Logger = { info: Function; warn: Function; error: Function };
 
 export function registerAdminRoutes(app: Express, prisma: PrismaClient, logger: Logger) {
-  // DEV ONLY: Direct user wipe without auth (for development reset) - DISABLED FOR PRODUCTION
-  // app.post('/dev/wipe-users', async (req: Request, res: Response) => {
-  //   const { password } = req.body || {};
-  //   if (password !== 'Kukuruza') return res.status(403).json({ error: 'BAD_PASSWORD' });
-  //   try {
-  //     // Delete dependent records first due to foreign keys
-  //     await prisma.predictionHistory.deleteMany({});
-  //     await prisma.prediction.deleteMany({});
-  //     await prisma.score.deleteMany({});
-  //     const result = await prisma.user.deleteMany({});
-  //     res.json({ deletedUsers: result.count });
-  //   } catch (e) {
-  //     logger.error({ e }, 'wipe-users error');
-  //     res.status(500).json({ error: 'WIPE_FAILED' });
-  //   }
-  // });
+  // DEV ONLY: Direct user wipe without auth (for development reset)
+  const DEV_ENDPOINTS_ENABLED = process.env.TG_INIT_BYPASS === '1';
+  if (DEV_ENDPOINTS_ENABLED) {
+    app.post('/dev/wipe-users', async (req: Request, res: Response) => {
+      const { password } = req.body || {};
+      if (password !== 'Kukuruza') return res.status(403).json({ error: 'BAD_PASSWORD' });
+      try {
+        // Delete dependent records first due to foreign keys
+        await prisma.predictionHistory.deleteMany({});
+        await prisma.prediction.deleteMany({});
+        await prisma.score.deleteMany({});
+        const result = await prisma.user.deleteMany({});
+        res.json({ deletedUsers: result.count });
+      } catch (e) {
+        logger.error({ e }, 'wipe-users error');
+        res.status(500).json({ error: 'WIPE_FAILED' });
+      }
+    });
+  }
 
   // Claim admin via shared password (simple for friends)
   app.post('/api/admin/claim', async (req: Request, res: Response) => {
@@ -31,22 +34,24 @@ export function registerAdminRoutes(app: Express, prisma: PrismaClient, logger: 
     res.json({ user: updated });
   });
 
-  // Danger: wipe all users (dev helper). Protected by password only. - DISABLED FOR PRODUCTION
-  // app.post('/api/admin/wipe-users', async (req: Request, res: Response) => {
-  //   const { password } = req.body || {};
-  //   if (password !== 'Kukuruza') return res.status(403).json({ error: 'BAD_PASSWORD' });
-  //   try {
-  //     // Delete dependent records first due to foreign keys
-  //     await prisma.predictionHistory.deleteMany({});
-  //     await prisma.prediction.deleteMany({});
-  //     await prisma.score.deleteMany({});
-  //     const result = await prisma.user.deleteMany({});
-  //     res.json({ deletedUsers: result.count });
-  //   } catch (e) {
-  //     logger.error({ e }, 'wipe-users error');
-  //     res.status(500).json({ error: 'WIPE_FAILED' });
-  //   }
-  // });
+  // Danger: wipe all users (dev helper). Protected by password only.
+  if (DEV_ENDPOINTS_ENABLED) {
+    app.post('/api/admin/wipe-users', async (req: Request, res: Response) => {
+      const { password } = req.body || {};
+      if (password !== 'Kukuruza') return res.status(403).json({ error: 'BAD_PASSWORD' });
+      try {
+        // Delete dependent records first due to foreign keys
+        await prisma.predictionHistory.deleteMany({});
+        await prisma.prediction.deleteMany({});
+        await prisma.score.deleteMany({});
+        const result = await prisma.user.deleteMany({});
+        res.json({ deletedUsers: result.count });
+      } catch (e) {
+        logger.error({ e }, 'wipe-users error');
+        res.status(500).json({ error: 'WIPE_FAILED' });
+      }
+    });
+  }
 
   // Trigger sync with football-data.org (cached with rate limiting)
   app.post('/api/admin/sync', async (req: Request, res: Response) => {

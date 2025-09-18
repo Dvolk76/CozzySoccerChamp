@@ -132,9 +132,9 @@ class ApiClient {
     return this.post<{ matches: number }>('/api/admin/recalc-all', {});
   }
 
-  // async wipeUsers(password: string) {
-  //   return this.post<{ deletedUsers: number }>('/api/admin/wipe-users', { password });
-  // }
+  async wipeUsers(password: string) {
+    return this.post<{ deletedUsers: number }>('/api/admin/wipe-users', { password });
+  }
 
   // Admin user management
   async getUsers() {
