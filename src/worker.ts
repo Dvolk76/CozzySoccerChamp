@@ -236,7 +236,7 @@ async function handleApiRoute(
         headers: { 'Content-Type': 'application/json' },
       });
     } else if (path.startsWith('/api/matches')) {
-      response = await matchesHandler(request, env, logger, cachedDataService, user);
+      response = await matchesHandler(request, env, logger, cachedDataService, user, prisma);
     } else if (path.startsWith('/api/predictions')) {
       response = await predictionsHandler(request, env, logger, cachedDataService, user);
     } else if (path.startsWith('/api/leaderboard')) {

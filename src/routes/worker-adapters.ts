@@ -9,7 +9,8 @@ export async function matchesHandler(
   env: any, 
   logger: Logger,
   cachedDataService?: any,
-  user?: any
+  user?: any,
+  prisma?: PrismaClient
 ): Promise<Response> {
   const url = new URL(request.url);
   
@@ -22,20 +23,37 @@ export async function matchesHandler(
     }
     
     const matches = await cachedDataService.getMatches();
-    
-    // If user is authenticated, include their predictions
-    if (user) {
-      // We don't have prisma directly here, need to use cachedDataService or get it from env
-      // For now, return matches without user predictions in workers context
-      // TODO: Add user predictions support to cachedDataService
-      return new Response(JSON.stringify({ matches }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    } else {
-      return new Response(JSON.stringify({ matches }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
+
+    // If user is authenticated and DB available, include their predictions
+    if (user && prisma) {
+      try {
+        const userPredictions = await (prisma as any).prediction.findMany({
+          where: { userId: user.id },
+          select: { matchId: true, predHome: true, predAway: true }
+        });
+
+        const predictionsMap = userPredictions.reduce((acc: Record<string, { predHome: number; predAway: number }>, p: any) => {
+          acc[p.matchId] = { predHome: p.predHome, predAway: p.predAway };
+          return acc;
+        }, {} as Record<string, { predHome: number; predAway: number }>);
+
+        const matchesWithPredictions = matches.map((match: any) => ({
+          ...match,
+          userPrediction: predictionsMap[match.id] || null,
+        }));
+
+        return new Response(JSON.stringify({ matches: matchesWithPredictions }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (e) {
+        logger.warn({ e }, 'Failed to include user predictions');
+        // Fallback to matches without user predictions
+      }
     }
+
+    return new Response(JSON.stringify({ matches }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (error) {
     logger.error({ error }, 'Failed to get matches');
     return new Response(JSON.stringify({ error: 'Failed to get matches' }), {
