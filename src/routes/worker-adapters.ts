@@ -13,8 +13,85 @@ export async function matchesHandler(
   prisma?: PrismaClient
 ): Promise<Response> {
   const url = new URL(request.url);
+  const path = url.pathname;
   
   try {
+    // Handle /api/matches/:id/predictions
+    if (path.match(/^\/api\/matches\/[^\/]+\/predictions$/)) {
+      if (!user) {
+        return new Response(JSON.stringify({ error: 'NO_AUTH' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const matchId = path.split('/')[3];
+      const match = await prisma.match.findUnique({ where: { id: matchId } });
+      if (!match) {
+        return new Response(JSON.stringify({ error: 'MATCH_NOT_FOUND' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const now = new Date();
+      const kickoffAt = new Date(match.kickoffAt as any);
+      if (now < kickoffAt) {
+        return new Response(JSON.stringify({ error: 'LOCKED' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const predictions = await prisma.prediction.findMany({
+        where: { matchId },
+        include: { user: true },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      const hasActual = match.scoreHome != null && match.scoreAway != null;
+      const actual = hasActual ? { home: match.scoreHome as number, away: match.scoreAway as number } : undefined;
+
+      // Import scoring function
+      const { scoring } = await import('../services/scoring.js');
+      
+      const items = predictions.map((p: any) => {
+        const pts = actual ? scoring({ home: p.predHome, away: p.predAway }, actual) : 0;
+        return {
+          userId: p.userId,
+          name: p.user?.name,
+          tg_user_id: p.user?.tg_user_id,
+          predHome: p.predHome,
+          predAway: p.predAway,
+          points: pts,
+          createdAt: p.createdAt,
+        };
+      });
+
+      // Sort by live points desc, then by createdAt asc as a stable secondary key
+      items.sort((a: any, b: any) => (b.points - a.points) || (a.createdAt as any).valueOf() - (b.createdAt as any).valueOf());
+
+      return new Response(JSON.stringify({
+        match: {
+          id: match.id,
+          scoreHome: match.scoreHome,
+          scoreAway: match.scoreAway,
+          kickoffAt: match.kickoffAt,
+          status: match.status,
+        },
+        predictions: items,
+      }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     if (!cachedDataService) {
       return new Response(JSON.stringify({ error: 'Cache service not available' }), {
         status: 500,
