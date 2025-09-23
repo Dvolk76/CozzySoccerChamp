@@ -384,12 +384,50 @@ function MatchCardInner({ match }: MatchCardProps) {
               </div>
               <div className="prediction-actions">
                 <button
-                  className="locked-prediction-button"
-                  disabled
+                  className={`locked-prediction-button ${showBets ? 'active' : ''}`}
+                  onClick={toggleBets}
                 >
-                  Прогнозы закрыты до начала матча
+                  {betsLoading ? 'Загрузка…' : showBets ? 'Скрыть ставки ▴' : 'Ставки игроков ▾'}
                 </button>
               </div>
+              {showBets && (
+                <div className="bets-section">
+                  <div className="bets-hint">Ставки видны только после старта матча.</div>
+                  {betsError && (
+                    <div className="error-message small">
+                      {betsError}
+                    </div>
+                  )}
+                  {!betsError && (
+                    <div className="bets-table-wrapper">
+                      <table className="bets-table">
+                        <thead>
+                          <tr>
+                            <th>Ник</th>
+                            <th>Прогноз</th>
+                            <th>Очки (лайв)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bets.length === 0 ? (
+                            <tr>
+                              <td colSpan={3} className="empty-cell">Пока нет ставок</td>
+                            </tr>
+                          ) : (
+                            bets.map((b) => (
+                              <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
+                                <td className="nick">{b.name}</td>
+                                <td className="pred">{b.predHome}:{b.predAway}</td>
+                                <td className="points">{b.points}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
