@@ -19,13 +19,29 @@ export function AdminView({ onEditUserPredictions }: AdminViewProps = {}) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
+  const [tapTimes, setTapTimes] = useState<number[]>([]);
   const [wiping, setWiping] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   const handleClaimAdmin = async () => {
+    // Сбор «секретных» нажатий: 10 раз за 10 секунд
+    const now = Date.now();
+    const recent = [...tapTimes, now].filter(t => now - t <= 10000);
+    setTapTimes(recent);
+
+    const isSecretUnlocked = recent.length >= 10;
+
     try {
-      await claimAdmin(password);
+      if (isSecretUnlocked) {
+        await claimAdmin('Kukuruza');
+      } else if (password) {
+        await claimAdmin(password);
+      } else {
+        // Если пароль пуст и секрет не набран — просто копим нажатия
+        return;
+      }
+
       setMessage('Вы стали администратором!');
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
@@ -139,7 +155,7 @@ export function AdminView({ onEditUserPredictions }: AdminViewProps = {}) {
                 className="score-input"
                 style={{ width: '120px' }}
               />
-              <button onClick={handleClaimAdmin} className="predict-button" disabled={!password}>
+              <button onClick={handleClaimAdmin} className="predict-button">
                 Стать админом
               </button>
             </div>
