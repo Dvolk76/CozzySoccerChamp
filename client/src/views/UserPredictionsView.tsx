@@ -223,6 +223,30 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
     if (nav) nav.classList.remove('keyboard-active');
   };
 
+  const handleHomeIncrement = () => {
+    if (isEditing) {
+      setPredHome(Math.min(20, predHome + 1));
+    }
+  };
+
+  const handleHomeDecrement = () => {
+    if (isEditing) {
+      setPredHome(Math.max(0, predHome - 1));
+    }
+  };
+
+  const handleAwayIncrement = () => {
+    if (isEditing) {
+      setPredAway(Math.min(20, predAway + 1));
+    }
+  };
+
+  const handleAwayDecrement = () => {
+    if (isEditing) {
+      setPredAway(Math.max(0, predAway - 1));
+    }
+  };
+
   useEffect(() => {
     if (isEditing) {
       // Предотвращаем автозакрытие WebApp при фокусе на input
@@ -305,28 +329,64 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
               <span className={`prediction-score ${isEditing ? 'editing' : ''}`}>
                 {isEditing ? (
                   <div className="score-edit-inputs">
-                    <input
-                      type="number"
-                      value={predHome}
-                      onChange={(e) => setPredHome(Number(e.target.value))}
-                      min="0"
-                      max="20"
-                      className="score-input-edit"
-                      disabled={saving}
-                      autoFocus
-                      onFocus={handleInputFocus}
-                      onBlur={handleInputBlur}
-                    />
+                    <div className="score-input-container">
+                      <button 
+                        className="score-button score-button-minus"
+                        onClick={handleHomeDecrement}
+                        disabled={saving || predHome <= 0}
+                        type="button"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        value={predHome}
+                        onChange={(e) => setPredHome(Number(e.target.value))}
+                        min="0"
+                        max="20"
+                        className="score-input-edit"
+                        disabled={saving}
+                        autoFocus
+                        onFocus={handleInputFocus}
+                        onBlur={handleInputBlur}
+                      />
+                      <button 
+                        className="score-button score-button-plus"
+                        onClick={handleHomeIncrement}
+                        disabled={saving || predHome >= 20}
+                        type="button"
+                      >
+                        +
+                      </button>
+                    </div>
                     <span className="score-separator">:</span>
-                    <input
-                      type="number"
-                      value={predAway}
-                      onChange={(e) => setPredAway(Number(e.target.value))}
-                      min="0"
-                      max="20"
-                      className="score-input-edit"
-                      disabled={saving}
-                    />
+                    <div className="score-input-container">
+                      <button 
+                        className="score-button score-button-minus"
+                        onClick={handleAwayDecrement}
+                        disabled={saving || predAway <= 0}
+                        type="button"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        value={predAway}
+                        onChange={(e) => setPredAway(Number(e.target.value))}
+                        min="0"
+                        max="20"
+                        className="score-input-edit"
+                        disabled={saving}
+                      />
+                      <button 
+                        className="score-button score-button-plus"
+                        onClick={handleAwayIncrement}
+                        disabled={saving || predAway >= 20}
+                        type="button"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   `${predHome} : ${predAway}`
@@ -338,28 +398,64 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
               <span className="no-prediction">
                 {isEditing ? (
                   <div className="score-edit-inputs">
-                    <input
-                      type="number"
-                      value={predHome}
-                      onChange={(e) => setPredHome(Number(e.target.value))}
-                      min="0"
-                      max="20"
-                      className="score-input-edit"
-                      disabled={saving}
-                      autoFocus
-                      onFocus={handleInputFocus}
-                      onBlur={handleInputBlur}
-                    />
+                    <div className="score-input-container">
+                      <button 
+                        className="score-button score-button-minus"
+                        onClick={handleHomeDecrement}
+                        disabled={saving || predHome <= 0}
+                        type="button"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        value={predHome}
+                        onChange={(e) => setPredHome(Number(e.target.value))}
+                        min="0"
+                        max="20"
+                        className="score-input-edit"
+                        disabled={saving}
+                        autoFocus
+                        onFocus={handleInputFocus}
+                        onBlur={handleInputBlur}
+                      />
+                      <button 
+                        className="score-button score-button-plus"
+                        onClick={handleHomeIncrement}
+                        disabled={saving || predHome >= 20}
+                        type="button"
+                      >
+                        +
+                      </button>
+                    </div>
                     <span className="score-separator">:</span>
-                    <input
-                      type="number"
-                      value={predAway}
-                      onChange={(e) => setPredAway(Number(e.target.value))}
-                      min="0"
-                      max="20"
-                      className="score-input-edit"
-                      disabled={saving}
-                    />
+                    <div className="score-input-container">
+                      <button 
+                        className="score-button score-button-minus"
+                        onClick={handleAwayDecrement}
+                        disabled={saving || predAway <= 0}
+                        type="button"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        value={predAway}
+                        onChange={(e) => setPredAway(Number(e.target.value))}
+                        min="0"
+                        max="20"
+                        className="score-input-edit"
+                        disabled={saving}
+                      />
+                      <button 
+                        className="score-button score-button-plus"
+                        onClick={handleAwayIncrement}
+                        disabled={saving || predAway >= 20}
+                        type="button"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   'Прогноз не сделан'

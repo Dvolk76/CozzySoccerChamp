@@ -567,6 +567,30 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
     }
   };
 
+  const handleHomeIncrement = () => {
+    if (hasExistingPrediction ? isEditing : true) {
+      setPredHome(Math.min(9, predHome + 1));
+    }
+  };
+
+  const handleHomeDecrement = () => {
+    if (hasExistingPrediction ? isEditing : true) {
+      setPredHome(Math.max(0, predHome - 1));
+    }
+  };
+
+  const handleAwayIncrement = () => {
+    if (hasExistingPrediction ? isEditing : true) {
+      setPredAway(Math.min(9, predAway + 1));
+    }
+  };
+
+  const handleAwayDecrement = () => {
+    if (hasExistingPrediction ? isEditing : true) {
+      setPredAway(Math.max(0, predAway - 1));
+    }
+  };
+
   return (
     <div className="match-card">
       <div className="match-header">
@@ -585,31 +609,67 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
 
       <div className="prediction-section">
         <div className="prediction-form">
-          <input
-            type="number"
-            min="0"
-            max="9"
-            value={homeFocused && predHome === 0 ? '' : predHome}
-            onChange={(e) => setPredHome(e.target.value === '' ? 0 : Number(e.target.value))}
-            onFocus={handleHomeFocus}
-            onBlur={handleHomeBlur}
-            className="score-input-large"
-            disabled={submitting || (hasExistingPrediction && !isEditing)}
-            placeholder="0"
-          />
+          <div className="score-input-container">
+            <button 
+              className="score-button score-button-minus"
+              onClick={handleHomeDecrement}
+              disabled={submitting || (hasExistingPrediction && !isEditing) || predHome <= 0}
+              type="button"
+            >
+              −
+            </button>
+            <input
+              type="number"
+              min="0"
+              max="9"
+              value={homeFocused && predHome === 0 ? '' : predHome}
+              onChange={(e) => setPredHome(e.target.value === '' ? 0 : Number(e.target.value))}
+              onFocus={handleHomeFocus}
+              onBlur={handleHomeBlur}
+              className="score-input-large"
+              disabled={submitting || (hasExistingPrediction && !isEditing)}
+              placeholder="0"
+            />
+            <button 
+              className="score-button score-button-plus"
+              onClick={handleHomeIncrement}
+              disabled={submitting || (hasExistingPrediction && !isEditing) || predHome >= 9}
+              type="button"
+            >
+              +
+            </button>
+          </div>
           <span className="score-separator">:</span>
-          <input
-            type="number"
-            min="0"
-            max="9"
-            value={awayFocused && predAway === 0 ? '' : predAway}
-            onChange={(e) => setPredAway(e.target.value === '' ? 0 : Number(e.target.value))}
-            onFocus={handleAwayFocus}
-            onBlur={handleAwayBlur}
-            className="score-input-large"
-            disabled={submitting || (hasExistingPrediction && !isEditing)}
-            placeholder="0"
-          />
+          <div className="score-input-container">
+            <button 
+              className="score-button score-button-minus"
+              onClick={handleAwayDecrement}
+              disabled={submitting || (hasExistingPrediction && !isEditing) || predAway <= 0}
+              type="button"
+            >
+              −
+            </button>
+            <input
+              type="number"
+              min="0"
+              max="9"
+              value={awayFocused && predAway === 0 ? '' : predAway}
+              onChange={(e) => setPredAway(e.target.value === '' ? 0 : Number(e.target.value))}
+              onFocus={handleAwayFocus}
+              onBlur={handleAwayBlur}
+              className="score-input-large"
+              disabled={submitting || (hasExistingPrediction && !isEditing)}
+              placeholder="0"
+            />
+            <button 
+              className="score-button score-button-plus"
+              onClick={handleAwayIncrement}
+              disabled={submitting || (hasExistingPrediction && !isEditing) || predAway >= 9}
+              type="button"
+            >
+              +
+            </button>
+          </div>
         </div>
         <div className="prediction-actions">
           {hasExistingPrediction && !isEditing && !success ? (

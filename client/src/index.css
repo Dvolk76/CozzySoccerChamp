@@ -239,6 +239,71 @@ body {
   user-select: none;
 }
 
+/* Score input container with buttons */
+.score-input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.score-button {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--tg-theme-button-color);
+  border-radius: 8px;
+  background: var(--surface-color);
+  color: var(--tg-theme-button-color);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.score-button:hover {
+  background: var(--tg-theme-button-color);
+  color: var(--tg-theme-button-text-color);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(36, 129, 204, 0.2);
+}
+
+.score-button:active {
+  transform: translateY(0px);
+  box-shadow: 0 1px 4px rgba(36, 129, 204, 0.2);
+}
+
+.score-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--surface-color);
+  color: var(--tg-theme-hint-color);
+  border-color: var(--border-color);
+  transform: none;
+  box-shadow: none;
+}
+
+.score-button:disabled:hover {
+  background: var(--surface-color);
+  color: var(--tg-theme-hint-color);
+  transform: none;
+  box-shadow: none;
+}
+
+/* Update prediction form layout */
+.prediction-form {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
 .prediction-actions {
   display: flex;
   gap: 8px;
@@ -776,6 +841,63 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Score input container for edit inputs */
+.score-edit-inputs .score-input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.score-edit-inputs .score-button {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--tg-theme-button-color);
+  border-radius: 6px;
+  background: var(--card-bg-color);
+  color: var(--tg-theme-button-color);
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.score-edit-inputs .score-button:hover {
+  background: var(--tg-theme-button-color);
+  color: var(--tg-theme-button-text-color);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(36, 129, 204, 0.2);
+}
+
+.score-edit-inputs .score-button:active {
+  transform: translateY(0px);
+  box-shadow: 0 1px 3px rgba(36, 129, 204, 0.2);
+}
+
+.score-edit-inputs .score-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--card-bg-color);
+  color: var(--tg-theme-hint-color);
+  border-color: var(--border-color);
+  transform: none;
+  box-shadow: none;
+}
+
+.score-edit-inputs .score-button:disabled:hover {
+  background: var(--card-bg-color);
+  color: var(--tg-theme-hint-color);
+  transform: none;
+  box-shadow: none;
 }
 
 .score-input-edit {
