@@ -926,24 +926,16 @@ body {
 /* Bets section styles */
 .bets-section {
   margin-top: 12px;
-  padding: 12px;
-  background: var(--card-bg-color);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-}
-
-.bets-hint {
-  font-size: 0.75rem;
-  color: var(--tg-theme-hint-color);
-  text-align: center;
-  margin-bottom: 8px;
+  padding: 0;
+  background: transparent;
 }
 
 .bets-table-wrapper {
   max-height: 320px;
   overflow-y: auto;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid var(--border-color);
+  background: var(--card-bg-color);
 }
 
 .bets-table {
