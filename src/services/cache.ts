@@ -214,12 +214,13 @@ export class CachedDataService {
           }
         });
 
-        // Calculate leaderboard
+        // Calculate leaderboard using the correct scoring system
         const leaderboard = users.map(user => {
           const predictions = user.predictions;
           let totalScore = 0;
-          let correctPredictions = 0;
           let exactScores = 0;
+          let diffScores = 0;
+          let outcomeScores = 0;
 
           predictions.forEach(prediction => {
             if (prediction.match.status === 'FINISHED' && 
@@ -231,20 +232,27 @@ export class CachedDataService {
               const predHome = prediction.predHome;
               const predAway = prediction.predAway;
 
-              // Exact score: 3 points
+              // Use the same scoring logic as in scoring.ts
               if (predHome === actualHome && predAway === actualAway) {
-                totalScore += 3;
+                // Exact score: 5 points
+                totalScore += 5;
                 exactScores++;
-                correctPredictions++;
-              }
-              // Correct outcome (win/draw/loss): 1 point
-              else if (
-                (predHome > predAway && actualHome > actualAway) ||
-                (predHome < predAway && actualHome < actualAway) ||
-                (predHome === predAway && actualHome === actualAway)
-              ) {
-                totalScore += 1;
-                correctPredictions++;
+              } else {
+                const predDiff = predHome - predAway;
+                const actualDiff = actualHome - actualAway;
+                const predOutcome = Math.sign(predDiff);
+                const actualOutcome = Math.sign(actualDiff);
+
+                if (predOutcome === actualOutcome && Math.abs(predDiff) === Math.abs(actualDiff)) {
+                  // Correct difference: 3 points
+                  totalScore += 3;
+                  diffScores++;
+                } else if (predOutcome === actualOutcome) {
+                  // Correct outcome: 2 points
+                  totalScore += 2;
+                  outcomeScores++;
+                }
+                // Wrong prediction: 0 points
               }
             }
           });
@@ -259,17 +267,24 @@ export class CachedDataService {
             },
             pointsTotal: totalScore,
             exactCount: exactScores,
-            diffCount: correctPredictions - exactScores, // correct predictions that aren't exact
-            outcomeCount: 0, // we don't track this separately in our simplified logic
-            firstPredAt: null // we'd need to calculate this from predictions
+            diffCount: diffScores,
+            outcomeCount: outcomeScores,
+            firstPredAt: user.predictions.length > 0 
+              ? user.predictions.reduce((earliest, pred) => 
+                  !earliest || pred.createdAt < earliest ? pred.createdAt : earliest, null as Date | null)
+              : null,
+            lastUpdated: new Date()
           };
         });
 
-        // Sort by score (descending), then by correct predictions, then by exact scores
+        // Sort by score (descending), then by exact scores, then by diff scores, then by outcome scores, then by first prediction time
         leaderboard.sort((a, b) => {
           if (a.pointsTotal !== b.pointsTotal) return b.pointsTotal - a.pointsTotal;
           if (a.exactCount !== b.exactCount) return b.exactCount - a.exactCount;
-          return b.diffCount - a.diffCount;
+          if (a.diffCount !== b.diffCount) return b.diffCount - a.diffCount;
+          if (a.outcomeCount !== b.outcomeCount) return b.outcomeCount - a.outcomeCount;
+          if (a.firstPredAt && b.firstPredAt) return (a.firstPredAt as Date).getTime() - (b.firstPredAt as Date).getTime();
+          return 0;
         });
 
         return leaderboard;
