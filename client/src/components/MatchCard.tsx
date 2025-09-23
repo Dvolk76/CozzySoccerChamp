@@ -209,13 +209,15 @@ function MatchCardInner({ match }: MatchCardProps) {
     if (!isLocked) return;
     const next = !showBets;
     setShowBets(next);
-    if (next && bets.length === 0 && !betsLoading) {
+    if (next && !betsLoading) {
       setBetsError(null);
       setBetsLoading(true);
       try {
         const data = await api.getMatchPredictions(match.id);
+        console.log('Match predictions data:', data);
         setBets(data.predictions || []);
       } catch (err) {
+        console.error('Error loading match predictions:', err);
         setBetsError(err instanceof Error ? err.message : 'Не удалось загрузить ставки');
       } finally {
         setBetsLoading(false);
@@ -350,13 +352,16 @@ function MatchCardInner({ match }: MatchCardProps) {
                               <td colSpan={3} className="empty-cell">Пока нет ставок</td>
                             </tr>
                           ) : (
-                            bets.map((b) => (
-                              <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
-                                <td className="nick">{b.name}</td>
-                                <td className="pred">{b.predHome}:{b.predAway}</td>
-                                <td className="points">{b.points}</td>
-                              </tr>
-                            ))
+                            bets.map((b) => {
+                              console.log('Rendering bet:', b);
+                              return (
+                                <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
+                                  <td className="nick">{b.name}</td>
+                                  <td className="pred">{b.predHome}:{b.predAway}</td>
+                                  <td className="points">{b.points}</td>
+                                </tr>
+                              );
+                            })
                           )}
                         </tbody>
                       </table>
@@ -414,13 +419,16 @@ function MatchCardInner({ match }: MatchCardProps) {
                               <td colSpan={3} className="empty-cell">Пока нет ставок</td>
                             </tr>
                           ) : (
-                            bets.map((b) => (
-                              <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
-                                <td className="nick">{b.name}</td>
-                                <td className="pred">{b.predHome}:{b.predAway}</td>
-                                <td className="points">{b.points}</td>
-                              </tr>
-                            ))
+                            bets.map((b) => {
+                              console.log('Rendering bet (no prediction):', b);
+                              return (
+                                <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
+                                  <td className="nick">{b.name}</td>
+                                  <td className="pred">{b.predHome}:{b.predAway}</td>
+                                  <td className="points">{b.points}</td>
+                                </tr>
+                              );
+                            })
                           )}
                         </tbody>
                       </table>
