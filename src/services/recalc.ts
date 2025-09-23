@@ -30,10 +30,10 @@ export async function recalcForMatch(prisma: PrismaClient, matchId: string) {
         lastUpdated: new Date(),
       },
       update: {
-        pointsTotal: { increment: a.total },
-        exactCount: { increment: a.exact },
-        diffCount: { increment: a.diff },
-        outcomeCount: { increment: a.outcome },
+        pointsTotal: a.total,
+        exactCount: a.exact,
+        diffCount: a.diff,
+        outcomeCount: a.outcome,
         lastUpdated: new Date(),
       },
     })
@@ -44,9 +44,22 @@ export async function recalcForMatch(prisma: PrismaClient, matchId: string) {
 
 export async function recalcAll(prisma: PrismaClient) {
   const finished = await prisma.match.findMany({ where: { status: 'FINISHED' } });
-  // Reset scores
-  await prisma.score.updateMany({ data: { pointsTotal: 0, exactCount: 0, diffCount: 0, outcomeCount: 0 } });
-  for (const m of finished) await recalcForMatch(prisma, m.id);
+  // Reset all scores to zero
+  await prisma.score.updateMany({ 
+    data: { 
+      pointsTotal: 0, 
+      exactCount: 0, 
+      diffCount: 0, 
+      outcomeCount: 0,
+      lastUpdated: new Date()
+    } 
+  });
+  
+  // Recalculate all finished matches
+  for (const m of finished) {
+    await recalcForMatch(prisma, m.id);
+  }
+  
   return { matches: finished.length };
 }
 
