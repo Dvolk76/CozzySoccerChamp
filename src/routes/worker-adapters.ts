@@ -156,16 +156,8 @@ export async function adminHandler(
   try {
     const url = new URL(request.url);
     const path = url.pathname;
-    
-    // Check admin permissions
-    if (!user || user.role !== 'ADMIN') {
-      return new Response(JSON.stringify({ error: 'FORBIDDEN' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Handle different admin endpoints
+  
+    // Handle claim admin BEFORE admin permission check (requires only auth)
     if (path === '/api/admin/claim' && request.method === 'POST') {
       if (!user) {
         return new Response(JSON.stringify({ error: 'NO_AUTH' }), {
@@ -202,6 +194,15 @@ export async function adminHandler(
       }
     }
 
+    // Check admin permissions for all other admin endpoints
+    if (!user || user.role !== 'ADMIN') {
+      return new Response(JSON.stringify({ error: 'FORBIDDEN' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Handle different admin endpoints
     if (path === '/api/admin/sync' && request.method === 'POST') {
       const body = await request.json() as any;
       const season = Number(body?.season) || 2025; // Current Champions League season 2025-26
