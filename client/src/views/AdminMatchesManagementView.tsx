@@ -508,7 +508,7 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
   };
 
   const handleScoreHomeIncrement = () => {
-    setScoreHome(Math.min(99, scoreHome + 1));
+    setScoreHome(Math.min(9, scoreHome + 1));
   };
 
   const handleScoreHomeDecrement = () => {
@@ -516,7 +516,7 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
   };
 
   const handleScoreAwayIncrement = () => {
-    setScoreAway(Math.min(99, scoreAway + 1));
+    setScoreAway(Math.min(9, scoreAway + 1));
   };
 
   const handleScoreAwayDecrement = () => {
@@ -561,7 +561,7 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
                 <button 
                   className="score-button score-button-plus"
                   onClick={handleScoreHomeIncrement}
-                  disabled={scoreSubmitting || scoreHome >= 99}
+                  disabled={scoreSubmitting || scoreHome >= 9}
                   type="button"
                 >
                   +
@@ -578,7 +578,7 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
               <input
                 type="number"
                 min="0"
-                max="99"
+                max="9"
                 value={scoreHomeFocused && scoreHome === 0 ? '' : scoreHome}
                 onChange={(e) => setScoreHome(e.target.value === '' ? 0 : Number(e.target.value))}
                 onFocus={handleScoreHomeFocus}
@@ -593,7 +593,7 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
               <input
                 type="number"
                 min="0"
-                max="99"
+                max="9"
                 value={scoreAwayFocused && scoreAway === 0 ? '' : scoreAway}
                 onChange={(e) => setScoreAway(e.target.value === '' ? 0 : Number(e.target.value))}
                 onFocus={handleScoreAwayFocus}
@@ -606,7 +606,7 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
                 <button 
                   className="score-button score-button-plus"
                   onClick={handleScoreAwayIncrement}
-                  disabled={scoreSubmitting || scoreAway >= 99}
+                  disabled={scoreSubmitting || scoreAway >= 9}
                   type="button"
                 >
                   +

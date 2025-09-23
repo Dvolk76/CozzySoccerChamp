@@ -225,7 +225,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
 
   const handleHomeIncrement = () => {
     if (isEditing) {
-      setPredHome(Math.min(20, predHome + 1));
+      setPredHome(Math.min(9, predHome + 1));
     }
   };
 
@@ -237,7 +237,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
 
   const handleAwayIncrement = () => {
     if (isEditing) {
-      setPredAway(Math.min(20, predAway + 1));
+      setPredAway(Math.min(9, predAway + 1));
     }
   };
 
@@ -334,7 +334,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         <button 
                           className="score-button score-button-plus"
                           onClick={handleHomeIncrement}
-                          disabled={saving || predHome >= 20}
+                          disabled={saving || predHome >= 9}
                           type="button"
                         >
                           +
@@ -353,7 +353,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         value={predHome}
                         onChange={(e) => setPredHome(Number(e.target.value))}
                         min="0"
-                        max="20"
+                        max="9"
                         className="score-input-edit"
                         disabled={saving}
                         autoFocus
@@ -368,7 +368,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         value={predAway}
                         onChange={(e) => setPredAway(Number(e.target.value))}
                         min="0"
-                        max="20"
+                        max="9"
                         className="score-input-edit"
                         disabled={saving}
                       />
@@ -376,7 +376,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         <button 
                           className="score-button score-button-plus"
                           onClick={handleAwayIncrement}
-                          disabled={saving || predAway >= 20}
+                          disabled={saving || predAway >= 9}
                           type="button"
                         >
                           +
@@ -407,7 +407,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         <button 
                           className="score-button score-button-plus"
                           onClick={handleHomeIncrement}
-                          disabled={saving || predHome >= 20}
+                          disabled={saving || predHome >= 9}
                           type="button"
                         >
                           +
@@ -426,7 +426,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         value={predHome}
                         onChange={(e) => setPredHome(Number(e.target.value))}
                         min="0"
-                        max="20"
+                        max="9"
                         className="score-input-edit"
                         disabled={saving}
                         autoFocus
@@ -441,7 +441,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         value={predAway}
                         onChange={(e) => setPredAway(Number(e.target.value))}
                         min="0"
-                        max="20"
+                        max="9"
                         className="score-input-edit"
                         disabled={saving}
                       />
@@ -449,7 +449,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         <button 
                           className="score-button score-button-plus"
                           onClick={handleAwayIncrement}
-                          disabled={saving || predAway >= 20}
+                          disabled={saving || predAway >= 9}
                           type="button"
                         >
                           +
