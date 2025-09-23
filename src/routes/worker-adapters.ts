@@ -458,6 +458,74 @@ export async function adminHandler(
       }
     }
 
+    // Handle GET /api/admin/matches (get all matches)
+    if (path === '/api/admin/matches' && request.method === 'GET') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const matches = await prisma.match.findMany({ orderBy: { kickoffAt: 'asc' } });
+        return new Response(JSON.stringify({ matches }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to get matches');
+        return new Response(JSON.stringify({ error: 'GET_MATCHES_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // Handle PATCH /api/admin/matches/:id (update match score)
+    if (path.match(/^\/api\/admin\/matches\/[^\/]+$/) && request.method === 'PATCH') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const pathParts = path.split('/');
+        const matchId = pathParts[4]; // /api/admin/matches/{matchId}
+        
+        if (!matchId) {
+          return new Response(JSON.stringify({ error: 'MATCH_ID_REQUIRED' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const body = await request.json() as any;
+        const { scoreHome, scoreAway, status, kickoffAt } = body || {};
+        
+        const match = await prisma.match.update({
+          where: { id: matchId },
+          data: {
+            scoreHome,
+            scoreAway,
+            status,
+            kickoffAt: kickoffAt ? new Date(kickoffAt) : undefined,
+          },
+        });
+
+        return new Response(JSON.stringify({ match }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error, matchId: path.split('/')[4] }, 'Failed to update match');
+        return new Response(JSON.stringify({ error: 'UPDATE_MATCH_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     // Handle POST /api/admin/users/:userId/predictions (create or update prediction)
     if (path.match(/^\/api\/admin\/users\/[^\/]+\/predictions$/) && request.method === 'POST') {
       if (!prisma) {
