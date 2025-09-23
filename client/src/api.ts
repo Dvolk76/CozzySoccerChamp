@@ -53,7 +53,12 @@ class ApiClient {
       console.error('Failed to fetch:', error);
       
       // More specific error handling
+      const verbose = (typeof window !== 'undefined' && localStorage.getItem('DEBUG_API') === '1') || (import.meta.env.VITE_DEBUG === '1');
       if (error instanceof Error) {
+        if (verbose) {
+          // Bubble up original error for debugging
+          throw error;
+        }
         if (error.message.includes('CORS')) {
           throw new Error('CORS error - check API configuration');
         }
@@ -65,10 +70,7 @@ class ApiClient {
         }
       }
       
-      // For development, show more detailed error
-      if (API_BASE.includes('localhost')) {
-        throw error;
-      }
+      // Default masked error (can be unmasked with DEBUG_API=1)
       throw new Error('Network error. Please check your connection.');
     }
   }

@@ -159,6 +159,7 @@ export async function adminHandler(
   
     // Handle claim admin BEFORE admin permission check (requires only auth)
     if (path === '/api/admin/claim' && request.method === 'POST') {
+      logger.info({ event: 'claim_attempt', userId: user?.id, hasUser: !!user }, 'Admin claim attempt');
       if (!user) {
         return new Response(JSON.stringify({ error: 'NO_AUTH' }), {
           status: 401,
@@ -175,6 +176,7 @@ export async function adminHandler(
       try {
         const body = await request.json() as any;
         const password = body?.password;
+        logger.info({ event: 'claim_body', hasPassword: !!password, len: typeof password === 'string' ? password.length : undefined });
         if (password !== 'Kukuruza') {
           return new Response(JSON.stringify({ error: 'BAD_PASSWORD' }), {
             status: 403,
@@ -182,11 +184,12 @@ export async function adminHandler(
           });
         }
         const updated = await (prisma as any).user.update({ where: { id: user.id }, data: { role: 'ADMIN' } });
+        logger.info({ event: 'claim_success', userId: user.id }, 'Admin claim success');
         return new Response(JSON.stringify({ user: updated }), {
           headers: { 'Content-Type': 'application/json' }
         });
       } catch (error) {
-        logger.error({ error }, 'Failed to claim admin');
+        logger.error({ error, userId: user.id }, 'Failed to claim admin');
         return new Response(JSON.stringify({ error: 'CLAIM_FAILED' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
