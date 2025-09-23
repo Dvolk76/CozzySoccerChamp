@@ -1,37 +1,30 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useMatchesUiState } from '../hooks/useMatchesUiState';
-import type { Match, Prediction, User } from '../types';
+import type { Match } from '../types';
 
-interface AdminMatchesViewProps {
-  userId: string;
+interface AdminMatchesManagementViewProps {
   onBack: () => void;
 }
 
-interface UserPredictionData {
-  user: User;
-  predictions: (Prediction & { match: Match })[];
-  matches: Match[];
-}
-
-export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
-  const [data, setData] = useState<UserPredictionData | null>(null);
+export function AdminMatchesManagementView({ onBack }: AdminMatchesManagementViewProps) {
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { collapsedGroups, collapsedDays, initializedDays, setCollapsedGroups, setCollapsedDays, setInitializedDays, toggleGroup, toggleDay } = useMatchesUiState();
 
   useEffect(() => {
-    loadUserPredictions();
-  }, [userId]);
+    loadMatches();
+  }, []);
 
-  const loadUserPredictions = async () => {
+  const loadMatches = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.getUserPredictions(userId);
-      setData(response);
+      const response = await api.getMatches();
+      setMatches(response.matches);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки прогнозов');
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки матчей');
     } finally {
       setLoading(false);
     }
@@ -63,7 +56,7 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
 
   // Автоматическое сворачивание групп при запуске приложения
   useEffect(() => {
-    if (!data?.matches || data.matches.length === 0 || initializedDays) return;
+    if (!matches || matches.length === 0 || initializedDays) return;
     
     const now = new Date();
     const groups: { [key: string]: Set<string> } = {};
@@ -82,7 +75,7 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
     };
     
     // Находим группы с лайв матчами и группы с матчами для ставок
-    data.matches.forEach(match => {
+    matches.forEach(match => {
       const matchday = match.matchday || 0;
       const stage = translateStage(match.stage) || 'Неизвестный тур';
       const date = new Date(match.kickoffAt).toLocaleDateString('ru-RU', {
@@ -119,7 +112,7 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
       let nearestGroup = '';
       
       for (const groupKey of upcomingGroups) {
-        const groupMatches = data.matches.filter(match => {
+        const groupMatches = matches.filter(match => {
           const matchday = match.matchday || 0;
           const stage = translateStage(match.stage) || 'Неизвестный тур';
           const matchGroupKey = `${stage}${matchday ? ` - Тур ${matchday}` : ''}`;
@@ -158,7 +151,7 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
         
         dates.forEach((date, index) => {
           const dayKey = `${groupName}-${date}`;
-          const dayMatches = data.matches.filter(match => {
+          const dayMatches = matches.filter(match => {
             const matchDate = new Date(match.kickoffAt).toLocaleDateString('ru-RU', {
               day: 'numeric',
               month: 'long'
@@ -187,14 +180,14 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
     setCollapsedGroups(collapsedGroupsSet);
     setCollapsedDays(collapsedDaysSet);
     setInitializedDays(true);
-  }, [data?.matches, initializedDays, setCollapsedGroups, setCollapsedDays, setInitializedDays]);
+  }, [matches, initializedDays, setCollapsedGroups, setCollapsedDays, setInitializedDays]);
 
   if (loading) {
     return (
       <div>
         <div className="header">
           <button onClick={onBack} className="back-button">← Назад</button>
-          Загрузка прогнозов...
+          Загрузка матчей...
         </div>
       </div>
     );
@@ -209,20 +202,9 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
         </div>
         <div className="error">
           {error}
-          <button onClick={loadUserPredictions} style={{ marginLeft: '8px' }}>
+          <button onClick={loadMatches} style={{ marginLeft: '8px' }}>
             Повторить
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div>
-        <div className="header">
-          <button onClick={onBack} className="back-button">← Назад</button>
-          Пользователь не найден
         </div>
       </div>
     );
@@ -232,7 +214,7 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
   const groupMatches = () => {
     const groups: { [key: string]: { [key: string]: Match[] } } = {};
     
-    data.matches.forEach(match => {
+    matches.forEach(match => {
       const matchday = match.matchday || 0;
       const stage = translateStage(match.stage) || 'Неизвестный тур';
       const date = new Date(match.kickoffAt).toLocaleDateString('ru-RU', {
@@ -267,15 +249,11 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
 
   const groupedMatches = groupMatches();
 
-  const getPredictionForMatch = (matchId: string) => {
-    return data?.predictions.find(p => p.matchId === matchId);
-  };
-
   return (
     <div>
       <div className="header">
         <button onClick={onBack} className="back-button">← Назад</button>
-        📝 Прогнозы: {data.user.name}
+        ⚽ Управление матчами
       </div>
       
       {Object.entries(groupedMatches).map(([groupName, dayGroups]) => {
@@ -315,25 +293,13 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
                     <div 
                       className={`match-day-content ${isDayCollapsed ? 'collapsed' : ''}`}
                     >
-                      {dayMatches.map((match) => {
-                        const prediction = getPredictionForMatch(match.id);
-                        const matchWithPrediction = {
-                          ...match,
-                          userPrediction: prediction ? {
-                            predHome: prediction.predHome,
-                            predAway: prediction.predAway
-                          } : null
-                        };
-                        
-                        return (
-                          <AdminMatchCard
-                            key={match.id}
-                            match={matchWithPrediction}
-                            userId={userId}
-                            onUpdate={loadUserPredictions}
-                          />
-                        );
-                      })}
+                      {dayMatches.map((match) => (
+                        <AdminMatchScoreCard
+                          key={match.id}
+                          match={match}
+                          onUpdate={loadMatches}
+                        />
+                      ))}
                     </div>
                   </div>
                 );
@@ -346,29 +312,24 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
   );
 }
 
-// Компонент для редактирования прогнозов в админке
-import { memo, useRef } from 'react';
+// Компонент для редактирования счета матча
+import { memo, useEffect, useRef, useState } from 'react';
 
-interface AdminMatchCardProps {
-  match: Match & { userPrediction: { predHome: number; predAway: number } | null };
-  userId: string;
+interface AdminMatchScoreCardProps {
+  match: Match;
   onUpdate: () => void;
 }
 
-function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
-  const initialHasPrediction = match.userPrediction !== null && match.userPrediction !== undefined;
-  const [hasLocalPrediction, setHasLocalPrediction] = useState(initialHasPrediction);
-  const hasExistingPrediction = hasLocalPrediction || initialHasPrediction;
-  
-  const [predHome, setPredHome] = useState(initialHasPrediction ? match.userPrediction!.predHome : 0);
-  const [predAway, setPredAway] = useState(initialHasPrediction ? match.userPrediction!.predAway : 0);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [homeFocused, setHomeFocused] = useState(false);
-  const [awayFocused, setAwayFocused] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-
+function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps) {
+  // Score editing state
+  const [isEditingScore, setIsEditingScore] = useState(false);
+  const [scoreHome, setScoreHome] = useState(match.scoreHome || 0);
+  const [scoreAway, setScoreAway] = useState(match.scoreAway || 0);
+  const [scoreSubmitting, setScoreSubmitting] = useState(false);
+  const [scoreError, setScoreError] = useState<string | null>(null);
+  const [scoreSuccess, setScoreSuccess] = useState(false);
+  const [scoreHomeFocused, setScoreHomeFocused] = useState(false);
+  const [scoreAwayFocused, setScoreAwayFocused] = useState(false);
 
   const kickoffTime = new Date(match.kickoffAt);
   const hasScore = match.scoreHome !== null && match.scoreAway !== null;
@@ -394,14 +355,6 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
     prevScoreRef.current = { h: currH, a: currA };
   }, [match.scoreHome, match.scoreAway]);
 
-  // Обновляем значения прогноза при изменении данных матча
-  useEffect(() => {
-    if (initialHasPrediction && !isEditing && !hasLocalPrediction) {
-      setPredHome(match.userPrediction!.predHome);
-      setPredAway(match.userPrediction!.predAway);
-    }
-  }, [match.userPrediction, initialHasPrediction, isEditing, hasLocalPrediction]);
-  
   const getMatchStatus = () => {
     const now = new Date();
     const matchTime = new Date(match.kickoffAt);
@@ -489,107 +442,86 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
     return stageTranslations[stage] || stage;
   };
 
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    setError(null);
+  // Score editing functions
+  const handleScoreSubmit = async () => {
+    if (!confirm('Изменить счет матча? Это повлияет на очки всех игроков.')) {
+      return;
+    }
+
+    setScoreSubmitting(true);
+    setScoreError(null);
     
     try {
-      await api.updateUserPrediction(userId, match.id, predHome, predAway);
-      setHasLocalPrediction(true);
-      setSuccess(true);
-      setIsEditing(false);
-      setTimeout(() => setSuccess(false), 1500);
+      await api.updateMatchScore(match.id, scoreHome, scoreAway, 'FINISHED');
+      
+      // Пересчитываем очки для этого матча
+      try {
+        await api.recalcMatch(match.id);
+      } catch (recalcErr) {
+        console.warn('Failed to recalc scores:', recalcErr);
+      }
+      
+      setScoreSuccess(true);
+      setIsEditingScore(false);
+      setTimeout(() => setScoreSuccess(false), 1500);
       onUpdate(); // Обновляем данные
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка отправки прогноза');
+      setScoreError(err instanceof Error ? err.message : 'Ошибка обновления счета');
     } finally {
-      setSubmitting(false);
+      setScoreSubmitting(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Удалить прогноз для этого матча?')) return;
-    
-    setSubmitting(true);
-    setError(null);
-    
-    try {
-      await api.deleteUserPrediction(userId, match.id);
-      setHasLocalPrediction(false);
-      setPredHome(0);
-      setPredAway(0);
-      setIsEditing(false);
-      onUpdate(); // Обновляем данные
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка удаления прогноза');
-    } finally {
-      setSubmitting(false);
-    }
+  const handleScoreEdit = () => {
+    setIsEditingScore(true);
+    setScoreHome(match.scoreHome || 0);
+    setScoreAway(match.scoreAway || 0);
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
+  const handleScoreCancel = () => {
+    setScoreHome(match.scoreHome || 0);
+    setScoreAway(match.scoreAway || 0);
+    setIsEditingScore(false);
+    setScoreError(null);
   };
 
-  const handleCancel = () => {
-    // Восстанавливаем оригинальные значения
-    if (hasExistingPrediction) {
-      setPredHome(match.userPrediction!.predHome);
-      setPredAway(match.userPrediction!.predAway);
-    } else {
-      setPredHome(0);
-      setPredAway(0);
-    }
-    setIsEditing(false);
-    setError(null);
+  const handleScoreHomeFocus = () => {
+    setScoreHomeFocused(true);
   };
 
-  const handleHomeFocus = () => {
-    setHomeFocused(true);
-  };
-
-  const handleHomeBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    setHomeFocused(false);
+  const handleScoreHomeBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setScoreHomeFocused(false);
     if (e.target.value === '') {
-      setPredHome(0);
+      setScoreHome(0);
     }
   };
 
-  const handleAwayFocus = () => {
-    setAwayFocused(true);
+  const handleScoreAwayFocus = () => {
+    setScoreAwayFocused(true);
   };
 
-  const handleAwayBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    setAwayFocused(false);
+  const handleScoreAwayBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setScoreAwayFocused(false);
     if (e.target.value === '') {
-      setPredAway(0);
+      setScoreAway(0);
     }
   };
 
-  const handleHomeIncrement = () => {
-    if (hasExistingPrediction ? isEditing : true) {
-      setPredHome(Math.min(9, predHome + 1));
-    }
+  const handleScoreHomeIncrement = () => {
+    setScoreHome(Math.min(99, scoreHome + 1));
   };
 
-  const handleHomeDecrement = () => {
-    if (hasExistingPrediction ? isEditing : true) {
-      setPredHome(Math.max(0, predHome - 1));
-    }
+  const handleScoreHomeDecrement = () => {
+    setScoreHome(Math.max(0, scoreHome - 1));
   };
 
-  const handleAwayIncrement = () => {
-    if (hasExistingPrediction ? isEditing : true) {
-      setPredAway(Math.min(9, predAway + 1));
-    }
+  const handleScoreAwayIncrement = () => {
+    setScoreAway(Math.min(99, scoreAway + 1));
   };
 
-  const handleAwayDecrement = () => {
-    if (hasExistingPrediction ? isEditing : true) {
-      setPredAway(Math.max(0, predAway - 1));
-    }
+  const handleScoreAwayDecrement = () => {
+    setScoreAway(Math.max(0, scoreAway - 1));
   };
-
 
   return (
     <div className="match-card">
@@ -607,127 +539,122 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
         <div className="team">{match.awayTeam}</div>
       </div>
 
-
-      <div className="prediction-section">
-        <div className="prediction-form">
-          <div className="score-input-container">
-            <div className="score-buttons-column">
-              <button 
-                className="score-button score-button-plus"
-                onClick={handleHomeIncrement}
-                disabled={submitting || (hasExistingPrediction && !isEditing) || predHome >= 9}
-                type="button"
-              >
-                +
-              </button>
-              <button 
-                className="score-button score-button-minus"
-                onClick={handleHomeDecrement}
-                disabled={submitting || (hasExistingPrediction && !isEditing) || predHome <= 0}
-                type="button"
-              >
-                −
-              </button>
-            </div>
-            <input
-              type="number"
-              min="0"
-              max="9"
-              value={homeFocused && predHome === 0 ? '' : predHome}
-              onChange={(e) => setPredHome(e.target.value === '' ? 0 : Number(e.target.value))}
-              onFocus={handleHomeFocus}
-              onBlur={handleHomeBlur}
-              className="score-input-large"
-              disabled={submitting || (hasExistingPrediction && !isEditing)}
-              placeholder="0"
-            />
-          </div>
-          <span className="score-separator">:</span>
-          <div className="score-input-container">
-            <input
-              type="number"
-              min="0"
-              max="9"
-              value={awayFocused && predAway === 0 ? '' : predAway}
-              onChange={(e) => setPredAway(e.target.value === '' ? 0 : Number(e.target.value))}
-              onFocus={handleAwayFocus}
-              onBlur={handleAwayBlur}
-              className="score-input-large"
-              disabled={submitting || (hasExistingPrediction && !isEditing)}
-              placeholder="0"
-            />
-            <div className="score-buttons-column">
-              <button 
-                className="score-button score-button-plus"
-                onClick={handleAwayIncrement}
-                disabled={submitting || (hasExistingPrediction && !isEditing) || predAway >= 9}
-                type="button"
-              >
-                +
-              </button>
-              <button 
-                className="score-button score-button-minus"
-                onClick={handleAwayDecrement}
-                disabled={submitting || (hasExistingPrediction && !isEditing) || predAway <= 0}
-                type="button"
-              >
-                −
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="prediction-actions">
-          {hasExistingPrediction && !isEditing && !success ? (
-            <>
-              <button
-                onClick={handleEdit}
-                className="edit-prediction-button"
-                disabled={submitting}
-              >
-                Изменить
-              </button>
-              <button
-                onClick={handleDelete}
-                className="delete-prediction-button"
-                disabled={submitting}
-              >
-                Удалить
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting || success}
-                className={`save-prediction-button ${success ? 'success' : ''}`}
-              >
-                {submitting ? '...' : success ? '✓' : hasExistingPrediction ? 'Сохранить' : 'Прогноз'}
-              </button>
-              {hasExistingPrediction && isEditing && !success && (
-                <button
-                  onClick={handleCancel}
-                  disabled={submitting}
-                  className="cancel-prediction-button"
-                >
-                  Отмена
-                </button>
-              )}
-            </>
+      {/* Score editing section */}
+      <div className="score-editing-section">
+        <div className="score-editing-header">
+          <span>Редактирование счета</span>
+          {!isEditingScore && (
+            <button
+              onClick={handleScoreEdit}
+              className="edit-score-button"
+              disabled={scoreSubmitting}
+            >
+              {hasScore ? 'Изменить счет' : 'Установить счет'}
+            </button>
           )}
         </div>
-      </div>
+        
+        {isEditingScore && (
+          <div className="score-editing-form">
+            <div className="score-input-container">
+              <div className="score-buttons-column">
+                <button 
+                  className="score-button score-button-plus"
+                  onClick={handleScoreHomeIncrement}
+                  disabled={scoreSubmitting || scoreHome >= 99}
+                  type="button"
+                >
+                  +
+                </button>
+                <button 
+                  className="score-button score-button-minus"
+                  onClick={handleScoreHomeDecrement}
+                  disabled={scoreSubmitting || scoreHome <= 0}
+                  type="button"
+                >
+                  −
+                </button>
+              </div>
+              <input
+                type="number"
+                min="0"
+                max="99"
+                value={scoreHomeFocused && scoreHome === 0 ? '' : scoreHome}
+                onChange={(e) => setScoreHome(e.target.value === '' ? 0 : Number(e.target.value))}
+                onFocus={handleScoreHomeFocus}
+                onBlur={handleScoreHomeBlur}
+                className="score-input-large"
+                disabled={scoreSubmitting}
+                placeholder="0"
+              />
+            </div>
+            <span className="score-separator">:</span>
+            <div className="score-input-container">
+              <input
+                type="number"
+                min="0"
+                max="99"
+                value={scoreAwayFocused && scoreAway === 0 ? '' : scoreAway}
+                onChange={(e) => setScoreAway(e.target.value === '' ? 0 : Number(e.target.value))}
+                onFocus={handleScoreAwayFocus}
+                onBlur={handleScoreAwayBlur}
+                className="score-input-large"
+                disabled={scoreSubmitting}
+                placeholder="0"
+              />
+              <div className="score-buttons-column">
+                <button 
+                  className="score-button score-button-plus"
+                  onClick={handleScoreAwayIncrement}
+                  disabled={scoreSubmitting || scoreAway >= 99}
+                  type="button"
+                >
+                  +
+                </button>
+                <button 
+                  className="score-button score-button-minus"
+                  onClick={handleScoreAwayDecrement}
+                  disabled={scoreSubmitting || scoreAway <= 0}
+                  type="button"
+                >
+                  −
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {isEditingScore && (
+          <div className="score-editing-actions">
+            <button
+              onClick={handleScoreSubmit}
+              disabled={scoreSubmitting || scoreSuccess}
+              className={`save-score-button ${scoreSuccess ? 'success' : ''}`}
+            >
+              {scoreSubmitting ? 'Сохранение...' : scoreSuccess ? '✓ Сохранено' : 'Сохранить счет'}
+            </button>
+            <button
+              onClick={handleScoreCancel}
+              disabled={scoreSubmitting}
+              className="cancel-score-button"
+            >
+              Отмена
+            </button>
+          </div>
+        )}
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+        {scoreError && (
+          <div className="error-message">
+            {scoreError}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 // Memoize to avoid rerender unless relevant match fields change
-export const AdminMatchCard = memo(AdminMatchCardInner, (prevProps, nextProps) => {
+export const AdminMatchScoreCard = memo(AdminMatchScoreCardInner, (prevProps, nextProps) => {
   const p = prevProps.match; const n = nextProps.match;
   return (
     p.id === n.id &&
@@ -738,7 +665,6 @@ export const AdminMatchCard = memo(AdminMatchCardInner, (prevProps, nextProps) =
     p.homeTeam === n.homeTeam &&
     p.awayTeam === n.awayTeam &&
     p.stage === n.stage &&
-    p.matchday === n.matchday &&
-    JSON.stringify(p.userPrediction) === JSON.stringify(n.userPrediction)
+    p.matchday === n.matchday
   );
 });

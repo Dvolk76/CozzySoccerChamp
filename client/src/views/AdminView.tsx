@@ -7,9 +7,10 @@ import type { User } from '../types';
 
 interface AdminViewProps {
   onEditUserPredictions?: (userId: string) => void;
+  onManageMatches?: () => void;
 }
 
-export function AdminView({ onEditUserPredictions }: AdminViewProps = {}) {
+export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewProps = {}) {
   const { user, claimAdmin } = useUser();
   const isAdmin = user?.role === 'ADMIN';
   const { stats, loading: loadingStats, refreshCache, lastUpdate } = useCacheStats(isAdmin);
@@ -218,6 +219,24 @@ export function AdminView({ onEditUserPredictions }: AdminViewProps = {}) {
               >
                 {recalcing ? 'Пересчёт...' : 'Пересчитать очки'}
               </button>
+            </div>
+
+            <div className="match-card">
+              <h3>⚽ Управление матчами</h3>
+              <p>Редактирование счетов матчей и результатов</p>
+              {onManageMatches ? (
+                <button
+                  onClick={onManageMatches}
+                  className="predict-button"
+                  style={{ marginTop: '8px' }}
+                >
+                  Управление матчами
+                </button>
+              ) : (
+                <p style={{ color: 'var(--tg-theme-hint-color)', fontStyle: 'italic' }}>
+                  Функция недоступна
+                </p>
+              )}
             </div>
 
             <div className="match-card">

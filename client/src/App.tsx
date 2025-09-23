@@ -6,6 +6,7 @@ import { LeaderboardView } from './views/LeaderboardView';
 import { AdminView } from './views/AdminView';
 import { UserPredictionsView } from './views/UserPredictionsView';
 import { AdminMatchesView } from './views/AdminMatchesView';
+import { AdminMatchesManagementView } from './views/AdminMatchesManagementView';
 import { useUser } from './hooks/useUser';
 
 function App() {
@@ -88,6 +89,10 @@ function App() {
     setCurrentView('admin-matches');
   };
 
+  const handleManageMatches = () => {
+    setCurrentView('admin-matches-management');
+  };
+
   const handleBackToAdmin = () => {
     setEditingUserId(null);
     setCurrentView('admin');
@@ -113,13 +118,26 @@ function App() {
         );
       }
 
+      if (currentView === 'admin-matches-management') {
+        return (
+          <AdminMatchesManagementView
+            onBack={handleBackToAdmin}
+          />
+        );
+      }
+
       switch (currentView) {
         case 'matches':
           return <MatchesView />;
         case 'leaderboard':
           return <LeaderboardView />;
         case 'admin':
-          return <AdminView onEditUserPredictions={handleEditUserPredictions} />;
+          return (
+            <AdminView 
+              onEditUserPredictions={handleEditUserPredictions}
+              onManageMatches={handleManageMatches}
+            />
+          );
         default:
           return <MatchesView />;
       }
@@ -152,7 +170,7 @@ function App() {
       <div className="container">
         {renderView()}
       </div>
-      {currentView !== 'user-predictions' && currentView !== 'admin-matches' && (
+      {currentView !== 'user-predictions' && currentView !== 'admin-matches' && currentView !== 'admin-matches-management' && (
         <Navigation 
           currentView={currentView} 
           onNavigate={(view) => {
