@@ -926,6 +926,8 @@ body {
 /* Bets section styles */
 .bets-section {
   margin-top: 12px;
+  margin-left: -16px;
+  margin-right: -16px;
   padding: 0;
   background: transparent;
 }
@@ -933,8 +935,11 @@ body {
 .bets-table-wrapper {
   max-height: 320px;
   overflow-y: auto;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   background: var(--card-bg-color);
 }
 
