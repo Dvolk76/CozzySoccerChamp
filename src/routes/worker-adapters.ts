@@ -179,6 +179,56 @@ export async function adminHandler(
       });
     }
     
+    // Recalculate scores for a specific match
+    if (path.match(/^\/api\/admin\/recalc\/[^\/]+$/) && request.method === 'POST') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      try {
+        const pathParts = path.split('/');
+        const matchId = pathParts[4]; // /api/admin/recalc/{matchId}
+        const { recalcForMatch } = await import('../services/recalc.js');
+        const result = await recalcForMatch(prisma as unknown as PrismaClient, matchId);
+        return new Response(JSON.stringify(result), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to recalc for match');
+        return new Response(JSON.stringify({ error: 'RECALC_MATCH_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // Recalculate scores for all finished matches
+    if (path === '/api/admin/recalc-all' && request.method === 'POST') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      try {
+        const { recalcAll } = await import('../services/recalc.js');
+        const result = await recalcAll(prisma as unknown as PrismaClient);
+        return new Response(JSON.stringify(result), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to recalc all');
+        return new Response(JSON.stringify({ error: 'RECALC_ALL_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     if (path === '/api/admin/cache-stats' && request.method === 'GET') {
       if (!cachedDataService) {
         return new Response(JSON.stringify({ error: 'Cache service not available' }), {
