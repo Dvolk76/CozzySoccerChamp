@@ -166,6 +166,42 @@ export async function adminHandler(
     }
 
     // Handle different admin endpoints
+    if (path === '/api/admin/claim' && request.method === 'POST') {
+      if (!user) {
+        return new Response(JSON.stringify({ error: 'NO_AUTH' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      try {
+        const body = await request.json() as any;
+        const password = body?.password;
+        if (password !== 'Kukuruza') {
+          return new Response(JSON.stringify({ error: 'BAD_PASSWORD' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        const updated = await (prisma as any).user.update({ where: { id: user.id }, data: { role: 'ADMIN' } });
+        return new Response(JSON.stringify({ user: updated }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to claim admin');
+        return new Response(JSON.stringify({ error: 'CLAIM_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     if (path === '/api/admin/sync' && request.method === 'POST') {
       const body = await request.json() as any;
       const season = Number(body?.season) || 2025; // Current Champions League season 2025-26
