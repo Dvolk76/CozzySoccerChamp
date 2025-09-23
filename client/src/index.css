@@ -922,3 +922,140 @@ body {
 }
 
 /* Дополнительные стили для предотвращения проблем с viewport уже включены выше */
+
+/* Bets section styles */
+.bets-section {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--card-bg-color);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.bets-hint {
+  font-size: 0.75rem;
+  color: var(--tg-theme-hint-color);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.bets-table-wrapper {
+  max-height: 320px;
+  overflow-y: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.bets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.bets-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--badge-bg-color);
+  z-index: 1;
+}
+
+.bets-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--tg-theme-text-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bets-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bet-row:hover {
+  background: var(--badge-bg-color);
+}
+
+.bet-row.me {
+  background: rgba(36, 129, 204, 0.1);
+  font-weight: 500;
+}
+
+.bet-row.me:hover {
+  background: rgba(36, 129, 204, 0.15);
+}
+
+.bets-table .nick {
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.bets-table .pred {
+  text-align: center;
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.bets-table .points {
+  text-align: right;
+  font-weight: 600;
+  color: var(--tg-theme-button-color);
+  min-width: 50px;
+}
+
+.empty-cell {
+  text-align: center;
+  color: var(--tg-theme-hint-color);
+  font-style: italic;
+  padding: 24px;
+}
+
+/* Live indicator */
+.live-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #dc2626;
+  border-radius: 50%;
+  margin-left: 6px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Mobile responsive for bets table */
+@media (max-width: 768px) {
+  .bets-table {
+    font-size: 0.8rem;
+  }
+  
+  .bets-table th,
+  .bets-table td {
+    padding: 6px 8px;
+  }
+  
+  .bets-table .nick {
+    min-width: 80px;
+  }
+  
+  .bets-table .pred {
+    min-width: 50px;
+  }
+  
+  .bets-table .points {
+    min-width: 40px;
+  }
+}

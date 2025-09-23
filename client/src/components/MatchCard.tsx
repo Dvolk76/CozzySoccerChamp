@@ -112,6 +112,7 @@ function MatchCardInner({ match }: MatchCardProps) {
   };
   
   const status = getMatchStatus();
+  const isLive = status.class === 'live' || status.class === 'paused';
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ru-RU', {
@@ -214,10 +215,8 @@ function MatchCardInner({ match }: MatchCardProps) {
       setBetsLoading(true);
       try {
         const data = await api.getMatchPredictions(match.id);
-        console.log('Match predictions data:', data);
         setBets(data.predictions || []);
       } catch (err) {
-        console.error('Error loading match predictions:', err);
         setBetsError(err instanceof Error ? err.message : 'Не удалось загрузить ставки');
       } finally {
         setBetsLoading(false);
@@ -325,7 +324,12 @@ function MatchCardInner({ match }: MatchCardProps) {
                   className={`locked-prediction-button ${showBets ? 'active' : ''}`}
                   onClick={toggleBets}
                 >
-                  {betsLoading ? 'Загрузка…' : showBets ? 'Скрыть ставки ▴' : 'Ставки игроков ▾'}
+                  {betsLoading ? 'Загрузка…' : showBets ? 'Скрыть ставки ▴' : (
+                    <>
+                      Ставки игроков ▾
+                      {isLive && <span className="live-indicator"></span>}
+                    </>
+                  )}
                 </button>
               </div>
               {showBets && (
@@ -343,7 +347,7 @@ function MatchCardInner({ match }: MatchCardProps) {
                           <tr>
                             <th>Ник</th>
                             <th>Прогноз</th>
-                            <th>Очки (лайв)</th>
+                            <th>Очки {isLive ? '(лайв)' : ''}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -352,16 +356,13 @@ function MatchCardInner({ match }: MatchCardProps) {
                               <td colSpan={3} className="empty-cell">Пока нет ставок</td>
                             </tr>
                           ) : (
-                            bets.map((b) => {
-                              console.log('Rendering bet:', b);
-                              return (
-                                <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
-                                  <td className="nick">{b.name}</td>
-                                  <td className="pred">{b.predHome}:{b.predAway}</td>
-                                  <td className="points">{b.points}</td>
-                                </tr>
-                              );
-                            })
+                            bets.map((b) => (
+                              <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
+                                <td className="nick">{b.name}</td>
+                                <td className="pred">{b.predHome}:{b.predAway}</td>
+                                <td className="points">{b.points}</td>
+                              </tr>
+                            ))
                           )}
                         </tbody>
                       </table>
@@ -392,7 +393,12 @@ function MatchCardInner({ match }: MatchCardProps) {
                   className={`locked-prediction-button ${showBets ? 'active' : ''}`}
                   onClick={toggleBets}
                 >
-                  {betsLoading ? 'Загрузка…' : showBets ? 'Скрыть ставки ▴' : 'Ставки игроков ▾'}
+                  {betsLoading ? 'Загрузка…' : showBets ? 'Скрыть ставки ▴' : (
+                    <>
+                      Ставки игроков ▾
+                      {isLive && <span className="live-indicator"></span>}
+                    </>
+                  )}
                 </button>
               </div>
               {showBets && (
@@ -410,7 +416,7 @@ function MatchCardInner({ match }: MatchCardProps) {
                           <tr>
                             <th>Ник</th>
                             <th>Прогноз</th>
-                            <th>Очки (лайв)</th>
+                            <th>Очки {isLive ? '(лайв)' : ''}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -419,16 +425,13 @@ function MatchCardInner({ match }: MatchCardProps) {
                               <td colSpan={3} className="empty-cell">Пока нет ставок</td>
                             </tr>
                           ) : (
-                            bets.map((b) => {
-                              console.log('Rendering bet (no prediction):', b);
-                              return (
-                                <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
-                                  <td className="nick">{b.name}</td>
-                                  <td className="pred">{b.predHome}:{b.predAway}</td>
-                                  <td className="points">{b.points}</td>
-                                </tr>
-                              );
-                            })
+                            bets.map((b) => (
+                              <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
+                                <td className="nick">{b.name}</td>
+                                <td className="pred">{b.predHome}:{b.predAway}</td>
+                                <td className="points">{b.points}</td>
+                              </tr>
+                            ))
                           )}
                         </tbody>
                       </table>
