@@ -610,14 +610,24 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
       <div className="prediction-section">
         <div className="prediction-form">
           <div className="score-input-container">
-            <button 
-              className="score-button score-button-minus"
-              onClick={handleHomeDecrement}
-              disabled={submitting || (hasExistingPrediction && !isEditing) || predHome <= 0}
-              type="button"
-            >
-              −
-            </button>
+            <div className="score-buttons-column">
+              <button 
+                className="score-button score-button-plus"
+                onClick={handleHomeIncrement}
+                disabled={submitting || (hasExistingPrediction && !isEditing) || predHome >= 9}
+                type="button"
+              >
+                +
+              </button>
+              <button 
+                className="score-button score-button-minus"
+                onClick={handleHomeDecrement}
+                disabled={submitting || (hasExistingPrediction && !isEditing) || predHome <= 0}
+                type="button"
+              >
+                −
+              </button>
+            </div>
             <input
               type="number"
               min="0"
@@ -630,25 +640,9 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
               disabled={submitting || (hasExistingPrediction && !isEditing)}
               placeholder="0"
             />
-            <button 
-              className="score-button score-button-plus"
-              onClick={handleHomeIncrement}
-              disabled={submitting || (hasExistingPrediction && !isEditing) || predHome >= 9}
-              type="button"
-            >
-              +
-            </button>
           </div>
           <span className="score-separator">:</span>
           <div className="score-input-container">
-            <button 
-              className="score-button score-button-minus"
-              onClick={handleAwayDecrement}
-              disabled={submitting || (hasExistingPrediction && !isEditing) || predAway <= 0}
-              type="button"
-            >
-              −
-            </button>
             <input
               type="number"
               min="0"
@@ -661,14 +655,24 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
               disabled={submitting || (hasExistingPrediction && !isEditing)}
               placeholder="0"
             />
-            <button 
-              className="score-button score-button-plus"
-              onClick={handleAwayIncrement}
-              disabled={submitting || (hasExistingPrediction && !isEditing) || predAway >= 9}
-              type="button"
-            >
-              +
-            </button>
+            <div className="score-buttons-column">
+              <button 
+                className="score-button score-button-plus"
+                onClick={handleAwayIncrement}
+                disabled={submitting || (hasExistingPrediction && !isEditing) || predAway >= 9}
+                type="button"
+              >
+                +
+              </button>
+              <button 
+                className="score-button score-button-minus"
+                onClick={handleAwayDecrement}
+                disabled={submitting || (hasExistingPrediction && !isEditing) || predAway <= 0}
+                type="button"
+              >
+                −
+              </button>
+            </div>
           </div>
         </div>
         <div className="prediction-actions">

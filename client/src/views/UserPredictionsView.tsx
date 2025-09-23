@@ -330,14 +330,24 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                 {isEditing ? (
                   <div className="score-edit-inputs">
                     <div className="score-input-container">
-                      <button 
-                        className="score-button score-button-minus"
-                        onClick={handleHomeDecrement}
-                        disabled={saving || predHome <= 0}
-                        type="button"
-                      >
-                        −
-                      </button>
+                      <div className="score-buttons-column">
+                        <button 
+                          className="score-button score-button-plus"
+                          onClick={handleHomeIncrement}
+                          disabled={saving || predHome >= 20}
+                          type="button"
+                        >
+                          +
+                        </button>
+                        <button 
+                          className="score-button score-button-minus"
+                          onClick={handleHomeDecrement}
+                          disabled={saving || predHome <= 0}
+                          type="button"
+                        >
+                          −
+                        </button>
+                      </div>
                       <input
                         type="number"
                         value={predHome}
@@ -350,25 +360,9 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         onFocus={handleInputFocus}
                         onBlur={handleInputBlur}
                       />
-                      <button 
-                        className="score-button score-button-plus"
-                        onClick={handleHomeIncrement}
-                        disabled={saving || predHome >= 20}
-                        type="button"
-                      >
-                        +
-                      </button>
                     </div>
                     <span className="score-separator">:</span>
                     <div className="score-input-container">
-                      <button 
-                        className="score-button score-button-minus"
-                        onClick={handleAwayDecrement}
-                        disabled={saving || predAway <= 0}
-                        type="button"
-                      >
-                        −
-                      </button>
                       <input
                         type="number"
                         value={predAway}
@@ -378,14 +372,24 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         className="score-input-edit"
                         disabled={saving}
                       />
-                      <button 
-                        className="score-button score-button-plus"
-                        onClick={handleAwayIncrement}
-                        disabled={saving || predAway >= 20}
-                        type="button"
-                      >
-                        +
-                      </button>
+                      <div className="score-buttons-column">
+                        <button 
+                          className="score-button score-button-plus"
+                          onClick={handleAwayIncrement}
+                          disabled={saving || predAway >= 20}
+                          type="button"
+                        >
+                          +
+                        </button>
+                        <button 
+                          className="score-button score-button-minus"
+                          onClick={handleAwayDecrement}
+                          disabled={saving || predAway <= 0}
+                          type="button"
+                        >
+                          −
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -399,14 +403,24 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                 {isEditing ? (
                   <div className="score-edit-inputs">
                     <div className="score-input-container">
-                      <button 
-                        className="score-button score-button-minus"
-                        onClick={handleHomeDecrement}
-                        disabled={saving || predHome <= 0}
-                        type="button"
-                      >
-                        −
-                      </button>
+                      <div className="score-buttons-column">
+                        <button 
+                          className="score-button score-button-plus"
+                          onClick={handleHomeIncrement}
+                          disabled={saving || predHome >= 20}
+                          type="button"
+                        >
+                          +
+                        </button>
+                        <button 
+                          className="score-button score-button-minus"
+                          onClick={handleHomeDecrement}
+                          disabled={saving || predHome <= 0}
+                          type="button"
+                        >
+                          −
+                        </button>
+                      </div>
                       <input
                         type="number"
                         value={predHome}
@@ -419,25 +433,9 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         onFocus={handleInputFocus}
                         onBlur={handleInputBlur}
                       />
-                      <button 
-                        className="score-button score-button-plus"
-                        onClick={handleHomeIncrement}
-                        disabled={saving || predHome >= 20}
-                        type="button"
-                      >
-                        +
-                      </button>
                     </div>
                     <span className="score-separator">:</span>
                     <div className="score-input-container">
-                      <button 
-                        className="score-button score-button-minus"
-                        onClick={handleAwayDecrement}
-                        disabled={saving || predAway <= 0}
-                        type="button"
-                      >
-                        −
-                      </button>
                       <input
                         type="number"
                         value={predAway}
@@ -447,14 +445,24 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
                         className="score-input-edit"
                         disabled={saving}
                       />
-                      <button 
-                        className="score-button score-button-plus"
-                        onClick={handleAwayIncrement}
-                        disabled={saving || predAway >= 20}
-                        type="button"
-                      >
-                        +
-                      </button>
+                      <div className="score-buttons-column">
+                        <button 
+                          className="score-button score-button-plus"
+                          onClick={handleAwayIncrement}
+                          disabled={saving || predAway >= 20}
+                          type="button"
+                        >
+                          +
+                        </button>
+                        <button 
+                          className="score-button score-button-minus"
+                          onClick={handleAwayDecrement}
+                          disabled={saving || predAway <= 0}
+                          type="button"
+                        >
+                          −
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (

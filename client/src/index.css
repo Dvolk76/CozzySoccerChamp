@@ -242,8 +242,14 @@ body {
 /* Score input container with buttons */
 .score-input-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
+  gap: 8px;
+}
+
+.score-input-container .score-buttons-column {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 }
 
@@ -846,9 +852,15 @@ body {
 /* Score input container for edit inputs */
 .score-edit-inputs .score-input-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+}
+
+.score-edit-inputs .score-input-container .score-buttons-column {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .score-edit-inputs .score-button {
