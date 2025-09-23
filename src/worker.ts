@@ -68,6 +68,8 @@ const handleOptions = (request: Request, env: Env) => {
 let globalPrisma: any = null;
 let globalCache: any = null;
 let globalCachedDataService: any = null;
+let globalLastApiSyncAtMs: number = 0;
+let globalIsApiSyncInProgress: boolean = false;
 
 // Main request handler
 export default {
@@ -126,6 +128,29 @@ export default {
             },
           });
           return response;
+        }
+
+        // Best-effort background sync before handling API route
+        try {
+          const now = Date.now();
+          const shouldTriggerSync = (now - globalLastApiSyncAtMs) > 60000 && !globalIsApiSyncInProgress;
+          if (shouldTriggerSync) {
+            globalIsApiSyncInProgress = true;
+            // Fire and forget background sync
+            cachedDataService
+              .syncMatchesFromAPI(new Date().getFullYear())
+              .then(() => {
+                globalLastApiSyncAtMs = Date.now();
+              })
+              .catch((err: any) => {
+                logger.warn({ err }, 'Background API sync failed');
+              })
+              .finally(() => {
+                globalIsApiSyncInProgress = false;
+              });
+          }
+        } catch (e) {
+          logger.warn({ e }, 'Failed to trigger background sync');
         }
 
         // Route handling with context
