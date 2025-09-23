@@ -107,6 +107,10 @@ class ApiClient {
     return this.get<{ matches: any[] }>('/api/matches');
   }
 
+  async getMatchPredictions(matchId: string) {
+    return this.get<{ match: any; predictions: Array<{ userId: string; name: string; tg_user_id?: string; predHome: number; predAway: number; points: number; createdAt: string }> }>(`/api/matches/${matchId}/predictions`);
+  }
+
   // Predictions
   async createPrediction(matchId: string, predHome: number, predAway: number) {
     return this.post<{ prediction: any }>('/api/predictions', {

@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from 'express';
 import type { PrismaClient } from '@prisma/client';
+import { scoring } from '../services/scoring.js';
 
 type Logger = { info: Function; warn: Function; error: Function };
 
@@ -34,6 +35,55 @@ export function registerMatchRoutes(app: Express, prisma: PrismaClient, _logger:
   app.get('/api/admin/matches', async (_req: Request, res: Response) => {
     const matches = await prisma.match.findMany({ orderBy: { kickoffAt: 'asc' } });
     res.json({ matches });
+  });
+
+  // Public: predictions for a match (visible after kickoff)
+  app.get('/api/matches/:id/predictions', async (req: Request, res: Response) => {
+    const user = (req as any).authUser;
+    if (!user) return res.status(401).json({ error: 'NO_AUTH' });
+
+    const match = await prisma.match.findUnique({ where: { id: req.params.id } });
+    if (!match) return res.status(404).json({ error: 'MATCH_NOT_FOUND' });
+
+    const now = new Date();
+    const kickoffAt = new Date(match.kickoffAt as any);
+    if (now < kickoffAt) return res.status(403).json({ error: 'LOCKED' });
+
+    const predictions = await prisma.prediction.findMany({
+      where: { matchId: req.params.id },
+      include: { user: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const hasActual = match.scoreHome != null && match.scoreAway != null;
+    const actual = hasActual ? { home: match.scoreHome as number, away: match.scoreAway as number } : undefined;
+
+    const items = predictions.map(p => {
+      const pts = actual ? scoring({ home: p.predHome, away: p.predAway }, actual) : 0;
+      return {
+        userId: p.userId,
+        name: p.user?.name,
+        tg_user_id: (p.user as any)?.tg_user_id,
+        predHome: p.predHome,
+        predAway: p.predAway,
+        points: pts,
+        createdAt: p.createdAt,
+      };
+    });
+
+    // Sort by live points desc, then by createdAt asc as a stable secondary key
+    items.sort((a, b) => (b.points - a.points) || (a.createdAt as any).valueOf() - (b.createdAt as any).valueOf());
+
+    res.json({
+      match: {
+        id: match.id,
+        scoreHome: match.scoreHome,
+        scoreAway: match.scoreAway,
+        kickoffAt: match.kickoffAt,
+        status: match.status,
+      },
+      predictions: items,
+    });
   });
 }
 

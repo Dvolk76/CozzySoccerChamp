@@ -20,6 +20,12 @@ function MatchCardInner({ match }: MatchCardProps) {
   const [awayFocused, setAwayFocused] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Bets toggle state
+  const [showBets, setShowBets] = useState(false);
+  const [betsLoading, setBetsLoading] = useState(false);
+  const [betsError, setBetsError] = useState<string | null>(null);
+  const [bets, setBets] = useState<Array<{ userId: string; name: string; tg_user_id?: string; predHome: number; predAway: number; points: number; createdAt: string }>>([]);
+
   const kickoffTime = new Date(match.kickoffAt);
   const isLocked = new Date() >= kickoffTime;
   const hasScore = match.scoreHome !== null && match.scoreAway !== null;
@@ -198,6 +204,25 @@ function MatchCardInner({ match }: MatchCardProps) {
     }
   };
 
+  const toggleBets = async () => {
+    // Only available after kickoff
+    if (!isLocked) return;
+    const next = !showBets;
+    setShowBets(next);
+    if (next && bets.length === 0 && !betsLoading) {
+      setBetsError(null);
+      setBetsLoading(true);
+      try {
+        const data = await api.getMatchPredictions(match.id);
+        setBets(data.predictions || []);
+      } catch (err) {
+        setBetsError(err instanceof Error ? err.message : 'Не удалось загрузить ставки');
+      } finally {
+        setBetsLoading(false);
+      }
+    }
+  };
+
   return (
     <div className="match-card">
       <div className="match-header">
@@ -295,12 +320,50 @@ function MatchCardInner({ match }: MatchCardProps) {
               </div>
               <div className="prediction-actions">
                 <button
-                  className="locked-prediction-button"
-                  disabled
+                  className={`locked-prediction-button ${showBets ? 'active' : ''}`}
+                  onClick={toggleBets}
                 >
-                  Прогнозы закрыты
+                  {betsLoading ? 'Загрузка…' : showBets ? 'Скрыть ставки ▴' : 'Ставки игроков ▾'}
                 </button>
               </div>
+              {showBets && (
+                <div className="bets-section">
+                  <div className="bets-hint">Ставки видны только после старта матча.</div>
+                  {betsError && (
+                    <div className="error-message small">
+                      {betsError}
+                    </div>
+                  )}
+                  {!betsError && (
+                    <div className="bets-table-wrapper">
+                      <table className="bets-table">
+                        <thead>
+                          <tr>
+                            <th>Ник</th>
+                            <th>Прогноз</th>
+                            <th>Очки (лайв)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bets.length === 0 ? (
+                            <tr>
+                              <td colSpan={3} className="empty-cell">Пока нет ставок</td>
+                            </tr>
+                          ) : (
+                            bets.map((b) => (
+                              <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
+                                <td className="nick">{b.name}</td>
+                                <td className="pred">{b.predHome}:{b.predAway}</td>
+                                <td className="points">{b.points}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="prediction-form-locked">
@@ -324,7 +387,7 @@ function MatchCardInner({ match }: MatchCardProps) {
                   className="locked-prediction-button"
                   disabled
                 >
-                  Прогнозы закрыты
+                  Прогнозы закрыты до начала матча
                 </button>
               </div>
             </div>
