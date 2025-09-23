@@ -370,6 +370,16 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
   const [awayFocused, setAwayFocused] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Score editing state
+  const [isEditingScore, setIsEditingScore] = useState(false);
+  const [scoreHome, setScoreHome] = useState(match.scoreHome || 0);
+  const [scoreAway, setScoreAway] = useState(match.scoreAway || 0);
+  const [scoreSubmitting, setScoreSubmitting] = useState(false);
+  const [scoreError, setScoreError] = useState<string | null>(null);
+  const [scoreSuccess, setScoreSuccess] = useState(false);
+  const [scoreHomeFocused, setScoreHomeFocused] = useState(false);
+  const [scoreAwayFocused, setScoreAwayFocused] = useState(false);
+
   const kickoffTime = new Date(match.kickoffAt);
   const isLocked = new Date() >= kickoffTime;
   const hasScore = match.scoreHome !== null && match.scoreAway !== null;
@@ -591,6 +601,87 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
     }
   };
 
+  // Score editing functions
+  const handleScoreSubmit = async () => {
+    if (!confirm('Изменить счет матча? Это повлияет на очки всех игроков.')) {
+      return;
+    }
+
+    setScoreSubmitting(true);
+    setScoreError(null);
+    
+    try {
+      await api.updateMatchScore(match.id, scoreHome, scoreAway, 'FINISHED');
+      
+      // Пересчитываем очки для этого матча
+      try {
+        await api.recalcMatch(match.id);
+      } catch (recalcErr) {
+        console.warn('Failed to recalc scores:', recalcErr);
+      }
+      
+      setScoreSuccess(true);
+      setIsEditingScore(false);
+      setTimeout(() => setScoreSuccess(false), 1500);
+      onUpdate(); // Обновляем данные
+    } catch (err) {
+      setScoreError(err instanceof Error ? err.message : 'Ошибка обновления счета');
+    } finally {
+      setScoreSubmitting(false);
+    }
+  };
+
+  const handleScoreEdit = () => {
+    setIsEditingScore(true);
+    setScoreHome(match.scoreHome || 0);
+    setScoreAway(match.scoreAway || 0);
+  };
+
+  const handleScoreCancel = () => {
+    setScoreHome(match.scoreHome || 0);
+    setScoreAway(match.scoreAway || 0);
+    setIsEditingScore(false);
+    setScoreError(null);
+  };
+
+  const handleScoreHomeFocus = () => {
+    setScoreHomeFocused(true);
+  };
+
+  const handleScoreHomeBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setScoreHomeFocused(false);
+    if (e.target.value === '') {
+      setScoreHome(0);
+    }
+  };
+
+  const handleScoreAwayFocus = () => {
+    setScoreAwayFocused(true);
+  };
+
+  const handleScoreAwayBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setScoreAwayFocused(false);
+    if (e.target.value === '') {
+      setScoreAway(0);
+    }
+  };
+
+  const handleScoreHomeIncrement = () => {
+    setScoreHome(Math.min(99, scoreHome + 1));
+  };
+
+  const handleScoreHomeDecrement = () => {
+    setScoreHome(Math.max(0, scoreHome - 1));
+  };
+
+  const handleScoreAwayIncrement = () => {
+    setScoreAway(Math.min(99, scoreAway + 1));
+  };
+
+  const handleScoreAwayDecrement = () => {
+    setScoreAway(Math.max(0, scoreAway - 1));
+  };
+
   return (
     <div className="match-card">
       <div className="match-header">
@@ -605,6 +696,117 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
           {hasScore ? `${match.scoreHome}:${match.scoreAway}` : 'vs'}
         </div>
         <div className="team">{match.awayTeam}</div>
+      </div>
+
+      {/* Score editing section for admin */}
+      <div className="score-editing-section">
+        <div className="score-editing-header">
+          <span>Редактирование счета</span>
+          {!isEditingScore && (
+            <button
+              onClick={handleScoreEdit}
+              className="edit-score-button"
+              disabled={scoreSubmitting}
+            >
+              {hasScore ? 'Изменить счет' : 'Установить счет'}
+            </button>
+          )}
+        </div>
+        
+        {isEditingScore && (
+          <div className="score-editing-form">
+            <div className="score-input-container">
+              <div className="score-buttons-column">
+                <button 
+                  className="score-button score-button-plus"
+                  onClick={handleScoreHomeIncrement}
+                  disabled={scoreSubmitting || scoreHome >= 99}
+                  type="button"
+                >
+                  +
+                </button>
+                <button 
+                  className="score-button score-button-minus"
+                  onClick={handleScoreHomeDecrement}
+                  disabled={scoreSubmitting || scoreHome <= 0}
+                  type="button"
+                >
+                  −
+                </button>
+              </div>
+              <input
+                type="number"
+                min="0"
+                max="99"
+                value={scoreHomeFocused && scoreHome === 0 ? '' : scoreHome}
+                onChange={(e) => setScoreHome(e.target.value === '' ? 0 : Number(e.target.value))}
+                onFocus={handleScoreHomeFocus}
+                onBlur={handleScoreHomeBlur}
+                className="score-input-large"
+                disabled={scoreSubmitting}
+                placeholder="0"
+              />
+            </div>
+            <span className="score-separator">:</span>
+            <div className="score-input-container">
+              <input
+                type="number"
+                min="0"
+                max="99"
+                value={scoreAwayFocused && scoreAway === 0 ? '' : scoreAway}
+                onChange={(e) => setScoreAway(e.target.value === '' ? 0 : Number(e.target.value))}
+                onFocus={handleScoreAwayFocus}
+                onBlur={handleScoreAwayBlur}
+                className="score-input-large"
+                disabled={scoreSubmitting}
+                placeholder="0"
+              />
+              <div className="score-buttons-column">
+                <button 
+                  className="score-button score-button-plus"
+                  onClick={handleScoreAwayIncrement}
+                  disabled={scoreSubmitting || scoreAway >= 99}
+                  type="button"
+                >
+                  +
+                </button>
+                <button 
+                  className="score-button score-button-minus"
+                  onClick={handleScoreAwayDecrement}
+                  disabled={scoreSubmitting || scoreAway <= 0}
+                  type="button"
+                >
+                  −
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {isEditingScore && (
+          <div className="score-editing-actions">
+            <button
+              onClick={handleScoreSubmit}
+              disabled={scoreSubmitting || scoreSuccess}
+              className={`save-score-button ${scoreSuccess ? 'success' : ''}`}
+            >
+              {scoreSubmitting ? 'Сохранение...' : scoreSuccess ? '✓ Сохранено' : 'Сохранить счет'}
+            </button>
+            <button
+              onClick={handleScoreCancel}
+              disabled={scoreSubmitting}
+              className="cancel-score-button"
+            >
+              Отмена
+            </button>
+          </div>
+        )}
+
+        {scoreError && (
+          <div className="error-message">
+            {scoreError}
+          </div>
+        )}
       </div>
 
       <div className="prediction-section">

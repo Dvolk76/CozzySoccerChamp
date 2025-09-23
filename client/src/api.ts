@@ -173,6 +173,19 @@ class ApiClient {
   async getCacheStats() {
     return this.get<{ stats: any }>('/api/admin/cache-stats');
   }
+
+  // Admin match score editing
+  async updateMatchScore(matchId: string, scoreHome: number, scoreAway: number, status?: string) {
+    return this.patch<{ match: any }>(`/api/admin/matches/${matchId}`, {
+      scoreHome,
+      scoreAway,
+      status,
+    });
+  }
+
+  async recalcMatch(matchId: string) {
+    return this.post<{ updated: number }>(`/api/admin/recalc/${matchId}`, {});
+  }
 }
 
 export const api = new ApiClient();
