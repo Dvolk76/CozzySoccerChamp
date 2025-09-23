@@ -334,7 +334,6 @@ function MatchCardInner({ match }: MatchCardProps) {
               </div>
               {showBets && (
                 <div className="bets-section">
-                  <div className="bets-hint">Ставки видны только после старта матча.</div>
                   {betsError && (
                     <div className="error-message small">
                       {betsError}
@@ -403,7 +402,6 @@ function MatchCardInner({ match }: MatchCardProps) {
               </div>
               {showBets && (
                 <div className="bets-section">
-                  <div className="bets-hint">Ставки видны только после старта матча.</div>
                   {betsError && (
                     <div className="error-message small">
                       {betsError}
