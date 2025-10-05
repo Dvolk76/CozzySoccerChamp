@@ -20,6 +20,10 @@ export function registerMatchRoutes(app: Express, prisma: PrismaClient, _logger:
     const user = (req as any).authUser;
     if (!user || user.role !== 'ADMIN') return res.status(403).json({ error: 'FORBIDDEN' });
     const { scoreHome, scoreAway, status, kickoffAt } = req.body || {};
+    
+    // Get the match before updating to check if scores changed
+    const oldMatch = await prisma.match.findUnique({ where: { id: req.params.id } });
+    
     const m = await prisma.match.update({
       where: { id: req.params.id },
       data: {
@@ -29,6 +33,23 @@ export function registerMatchRoutes(app: Express, prisma: PrismaClient, _logger:
         kickoffAt: kickoffAt ? new Date(kickoffAt) : undefined,
       },
     });
+    
+    // If scores were updated and match is finished, recalculate points
+    const scoresChanged = (oldMatch?.scoreHome !== scoreHome || oldMatch?.scoreAway !== scoreAway) && 
+                         scoreHome !== null && scoreAway !== null && 
+                         (status === 'FINISHED' || m.status === 'FINISHED');
+    
+    if (scoresChanged) {
+      try {
+        const { recalcForMatch } = await import('../services/recalc.js');
+        const cachedDataService = (req as any).cachedDataService;
+        await recalcForMatch(prisma, req.params.id, cachedDataService);
+      } catch (error) {
+        console.error('Failed to recalculate scores after match update:', error);
+        // Don't fail the request, just log the error
+      }
+    }
+    
     res.json({ match: m });
   });
 

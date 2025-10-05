@@ -1,7 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import { scoring } from './scoring.js';
 
-export async function recalcForMatch(prisma: PrismaClient, matchId: string) {
+export async function recalcForMatch(prisma: PrismaClient, matchId: string, cachedDataService?: any) {
   const match = await prisma.match.findUnique({ where: { id: matchId } });
   if (!match || match.scoreHome == null || match.scoreAway == null) return { updated: 0 };
   const actual = { home: match.scoreHome, away: match.scoreAway };
@@ -39,10 +39,20 @@ export async function recalcForMatch(prisma: PrismaClient, matchId: string) {
     })
   );
   await prisma.$transaction(ops);
+  
+  // Invalidate leaderboard cache after recalculating scores
+  if (cachedDataService) {
+    try {
+      cachedDataService.cache?.invalidate('leaderboard');
+    } catch (error) {
+      console.error('Failed to invalidate leaderboard cache:', error);
+    }
+  }
+  
   return { updated: ops.length };
 }
 
-export async function recalcAll(prisma: PrismaClient) {
+export async function recalcAll(prisma: PrismaClient, cachedDataService?: any) {
   const finished = await prisma.match.findMany({ where: { status: 'FINISHED' } });
   // Reset all scores to zero
   await prisma.score.updateMany({ 
@@ -57,7 +67,16 @@ export async function recalcAll(prisma: PrismaClient) {
   
   // Recalculate all finished matches
   for (const m of finished) {
-    await recalcForMatch(prisma, m.id);
+    await recalcForMatch(prisma, m.id, cachedDataService);
+  }
+  
+  // Invalidate leaderboard cache after recalculating all scores
+  if (cachedDataService) {
+    try {
+      cachedDataService.cache?.invalidate('leaderboard');
+    } catch (error) {
+      console.error('Failed to invalidate leaderboard cache:', error);
+    }
   }
   
   return { matches: finished.length };

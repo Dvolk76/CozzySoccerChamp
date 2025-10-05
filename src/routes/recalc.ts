@@ -8,7 +8,8 @@ export function registerRecalcRoutes(app: Express, prisma: PrismaClient, logger:
     const user = (req as any).authUser;
     if (!user || user.role !== 'ADMIN') return res.status(403).json({ error: 'FORBIDDEN' });
     const { recalcForMatch } = await import('../services/recalc.js');
-    const result = await recalcForMatch(prisma, req.params.matchId);
+    const cachedDataService = (req as any).cachedDataService;
+    const result = await recalcForMatch(prisma, req.params.matchId, cachedDataService);
     res.json(result);
   });
 
@@ -16,7 +17,8 @@ export function registerRecalcRoutes(app: Express, prisma: PrismaClient, logger:
     const user = (req as any).authUser;
     if (!user || user.role !== 'ADMIN') return res.status(403).json({ error: 'FORBIDDEN' });
     const { recalcAll } = await import('../services/recalc.js');
-    const result = await recalcAll(prisma);
+    const cachedDataService = (req as any).cachedDataService;
+    const result = await recalcAll(prisma, cachedDataService);
     res.json(result);
   });
 }

@@ -385,7 +385,7 @@ export async function adminHandler(
         const pathParts = path.split('/');
         const matchId = pathParts[4]; // /api/admin/recalc/{matchId}
         const { recalcForMatch } = await import('../services/recalc.js');
-        const result = await recalcForMatch(prisma as unknown as PrismaClient, matchId);
+        const result = await recalcForMatch(prisma as unknown as PrismaClient, matchId, cachedDataService);
         return new Response(JSON.stringify(result), {
           headers: { 'Content-Type': 'application/json' }
         });
@@ -409,7 +409,7 @@ export async function adminHandler(
 
       try {
         const { recalcAll } = await import('../services/recalc.js');
-        const result = await recalcAll(prisma as unknown as PrismaClient);
+        const result = await recalcAll(prisma as unknown as PrismaClient, cachedDataService);
         return new Response(JSON.stringify(result), {
           headers: { 'Content-Type': 'application/json' }
         });
@@ -562,6 +562,9 @@ export async function adminHandler(
         const body = await request.json() as any;
         const { scoreHome, scoreAway, status, kickoffAt } = body || {};
         
+        // Get the match before updating to check if scores changed
+        const oldMatch = await prisma.match.findUnique({ where: { id: matchId } });
+        
         const match = await prisma.match.update({
           where: { id: matchId },
           data: {
@@ -571,6 +574,21 @@ export async function adminHandler(
             kickoffAt: kickoffAt ? new Date(kickoffAt) : undefined,
           },
         });
+
+        // If scores were updated and match is finished, recalculate points
+        const scoresChanged = (oldMatch?.scoreHome !== scoreHome || oldMatch?.scoreAway !== scoreAway) && 
+                             scoreHome !== null && scoreAway !== null && 
+                             (status === 'FINISHED' || match.status === 'FINISHED');
+        
+        if (scoresChanged) {
+          try {
+            const { recalcForMatch } = await import('../services/recalc.js');
+            await recalcForMatch(prisma, matchId, cachedDataService);
+          } catch (error) {
+            logger.error({ error, matchId }, 'Failed to recalculate scores after match update');
+            // Don't fail the request, just log the error
+          }
+        }
 
         return new Response(JSON.stringify({ match }), {
           headers: { 'Content-Type': 'application/json' }
