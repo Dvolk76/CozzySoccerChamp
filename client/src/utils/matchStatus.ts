@@ -67,14 +67,28 @@ export function getMatchStatus(match: {
         isScheduled: true
       };
     
-    case 'TIMED':
-      return {
-        text: 'Начат',
-        class: 'live',
-        isLive: true,
-        isFinished: false,
-        isScheduled: false
-      };
+    case 'TIMED': {
+      // TIMED означает, что у матча есть запланированное время, но он еще не начался
+      if (now >= matchTime) {
+        // Время наступило, но матч еще не перешел в IN_PLAY - считаем начатым
+        return {
+          text: 'Начат',
+          class: 'live',
+          isLive: true,
+          isFinished: false,
+          isScheduled: false
+        };
+      } else {
+        // Время еще не наступило - матч запланирован
+        return {
+          text: 'Запланирован',
+          class: 'scheduled',
+          isLive: false,
+          isFinished: false,
+          isScheduled: true
+        };
+      }
+    }
     
     case 'IN_PLAY':
       return {

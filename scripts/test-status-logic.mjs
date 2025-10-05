@@ -29,8 +29,16 @@ function getMatchStatus(match) {
     case 'SCHEDULED':
       return { text: 'Запланирован', class: 'scheduled', isLive: false, isFinished: false };
     
-    case 'TIMED':
-      return { text: 'Начат', class: 'live', isLive: true, isFinished: false };
+    case 'TIMED': {
+      // TIMED означает, что у матча есть запланированное время, но он еще не начался
+      if (now >= matchTime) {
+        // Время наступило, но матч еще не перешел в IN_PLAY - считаем начатым
+        return { text: 'Начат', class: 'live', isLive: true, isFinished: false };
+      } else {
+        // Время еще не наступило - матч запланирован
+        return { text: 'Запланирован', class: 'scheduled', isLive: false, isFinished: false };
+      }
+    }
     
     case 'IN_PLAY':
     case 'LIVE':
@@ -83,6 +91,12 @@ const testMatches = [
     kickoffAt: new Date(Date.now() - 30 * 60 * 1000), // 30 минут назад
     scoreHome: 1,
     scoreAway: 0
+  },
+  {
+    status: 'TIMED',
+    kickoffAt: new Date(Date.now() + 2 * 60 * 60 * 1000), // через 2 часа (будущий)
+    scoreHome: null,
+    scoreAway: null
   },
   {
     status: 'IN_PLAY',
