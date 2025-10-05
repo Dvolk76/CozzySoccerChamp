@@ -31,9 +31,24 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
     
     // Если fullTime счета нет, но есть halfTime - используем его для лайв матчей
     if ((scoreHome === null || scoreAway === null) && 
-        (status === 'LIVE' || status === 'IN_PLAY' || status === 'PAUSED')) {
+        (status === 'LIVE' || status === 'IN_PLAY' || status === 'PAUSED' || status === 'TIMED')) {
       scoreHome = m.score?.halfTime?.home ?? scoreHome;
       scoreAway = m.score?.halfTime?.away ?? scoreAway;
+    }
+
+    // Дополнительная логика для исправления статусов старых матчей
+    const now = new Date();
+    const matchTime = new Date(m.utcDate);
+    const hoursFromKickoff = Math.max(0, (now.getTime() - matchTime.getTime()) / (1000 * 60 * 60));
+    
+    // Если матч был более 4 часов назад и есть счет, принудительно устанавливаем статус FINISHED
+    if (hoursFromKickoff >= 4 && (scoreHome !== null || scoreAway !== null)) {
+      status = 'FINISHED';
+    }
+    
+    // Если матч был более 6 часов назад, принудительно устанавливаем статус FINISHED
+    if (hoursFromKickoff >= 6) {
+      status = 'FINISHED';
     }
 
     tasks.push(

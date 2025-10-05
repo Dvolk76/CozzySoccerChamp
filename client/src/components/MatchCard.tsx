@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import type { Match } from '../types';
+import { getMatchStatus, isMatchActive } from '../utils/matchStatus';
 
 interface MatchCardProps {
   match: Match;
@@ -59,60 +60,8 @@ function MatchCardInner({ match }: MatchCardProps) {
     }
   }, [match.userPrediction, initialHasPrediction, isEditing, hasLocalPrediction]);
   
-  const getMatchStatus = () => {
-    const now = new Date();
-    const matchTime = new Date(match.kickoffAt);
-    const minutesFromKickoff = Math.max(0, Math.floor((now.getTime() - matchTime.getTime()) / 60000));
-    // Conservative thresholds to account for halftime (≈15m), added time, and potential extra time (2x15 + short break)
-    const FINISH_MINUTES_HARD = 155;      // ~2h35m from kickoff (covers ET + stoppage)
-    const FINISH_MINUTES_WITH_SCORE = 135; // ~2h15m if we already have a score registered
-    
-    // Обрабатываем все возможные статусы Football Data API v4
-    // Полный список статусов: https://www.football-data.org/documentation/api
-    switch (match.status) {
-      case 'SCHEDULED':
-        return { text: 'Запланирован', class: 'scheduled' };
-      
-      case 'LIVE':
-      case 'IN_PLAY':
-        return { text: 'В игре', class: 'live' };
-      
-      case 'PAUSED': {
-        // Some feeds leave PAUSED long after FT. We consider halftime, added time and extra time.
-        if (minutesFromKickoff >= FINISH_MINUTES_HARD || (hasScore && minutesFromKickoff >= FINISH_MINUTES_WITH_SCORE)) {
-          return { text: 'Завершен', class: 'finished' };
-        }
-        return { text: 'Пауза', class: 'paused' };
-      }
-      
-      case 'FINISHED':
-        return { text: 'Завершен', class: 'finished' };
-      
-      case 'POSTPONED':
-        return { text: 'Отложен', class: 'postponed' };
-      
-      case 'SUSPENDED':
-        return { text: 'Приостановлен', class: 'suspended' };
-      
-      case 'CANCELLED':
-        return { text: 'Отменен', class: 'cancelled' };
-      
-      default:
-        // Если статус неизвестен, определяем по времени и наличию счета
-        if (hasScore) {
-          return { text: 'Завершен', class: 'finished' };
-        }
-        
-        if (now >= matchTime) {
-          return { text: 'В игре', class: 'live' };
-        }
-        
-        return { text: 'Запланирован', class: 'scheduled' };
-    }
-  };
-  
-  const status = getMatchStatus();
-  const isLive = status.class === 'live' || status.class === 'paused';
+  const status = getMatchStatus(match);
+  const isLive = isMatchActive(match);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ru-RU', {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useMatchesUiState } from '../hooks/useMatchesUiState';
 import type { Match, Prediction, User } from '../types';
+import { getMatchStatus, canBetOnMatch, isMatchActive } from '../utils/matchStatus';
 
 interface AdminMatchesViewProps {
   userId: string;
@@ -65,20 +66,18 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
   useEffect(() => {
     if (!data?.matches || data.matches.length === 0 || initializedDays) return;
     
-    const now = new Date();
     const groups: { [key: string]: Set<string> } = {};
     const liveGroups = new Set<string>();
     const upcomingGroups = new Set<string>();
     
     // Вспомогательная функция для определения активных (live) матчей
     const isLiveMatch = (match: Match) => {
-      return match.status === 'LIVE' || match.status === 'IN_PLAY' || match.status === 'PAUSED';
+      return isMatchActive(match);
     };
     
     // Вспомогательная функция для определения доступности матча для ставок
     const isAvailableForBetting = (match: Match) => {
-      const matchTime = new Date(match.kickoffAt);
-      return matchTime > now && !['FINISHED', 'CANCELLED', 'POSTPONED', 'SUSPENDED'].includes(match.status);
+      return canBetOnMatch(match);
     };
     
     // Находим группы с лайв матчами и группы с матчами для ставок
@@ -402,59 +401,7 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
     }
   }, [match.userPrediction, initialHasPrediction, isEditing, hasLocalPrediction]);
   
-  const getMatchStatus = () => {
-    const now = new Date();
-    const matchTime = new Date(match.kickoffAt);
-    const minutesFromKickoff = Math.max(0, Math.floor((now.getTime() - matchTime.getTime()) / 60000));
-    // Conservative thresholds to account for halftime (≈15m), added time, and potential extra time (2x15 + short break)
-    const FINISH_MINUTES_HARD = 155;      // ~2h35m from kickoff (covers ET + stoppage)
-    const FINISH_MINUTES_WITH_SCORE = 135; // ~2h15m if we already have a score registered
-    
-    // Обрабатываем все возможные статусы Football Data API v4
-    // Полный список статусов: https://www.football-data.org/documentation/api
-    switch (match.status) {
-      case 'SCHEDULED':
-        return { text: 'Запланирован', class: 'scheduled' };
-      
-      case 'LIVE':
-      case 'IN_PLAY':
-        return { text: 'В игре', class: 'live' };
-      
-      case 'PAUSED': {
-        // Some feeds leave PAUSED long after FT. We consider halftime, added time and extra time.
-        if (minutesFromKickoff >= FINISH_MINUTES_HARD || (hasScore && minutesFromKickoff >= FINISH_MINUTES_WITH_SCORE)) {
-          return { text: 'Завершен', class: 'finished' };
-        }
-        return { text: 'Пауза', class: 'paused' };
-      }
-      
-      case 'FINISHED':
-        return { text: 'Завершен', class: 'finished' };
-      
-      case 'POSTPONED':
-        return { text: 'Отложен', class: 'postponed' };
-      
-      case 'SUSPENDED':
-        return { text: 'Приостановлен', class: 'suspended' };
-      
-      case 'CANCELLED':
-        return { text: 'Отменен', class: 'cancelled' };
-      
-      default:
-        // Если статус неизвестен, определяем по времени и наличию счета
-        if (hasScore) {
-          return { text: 'Завершен', class: 'finished' };
-        }
-        
-        if (now >= matchTime) {
-          return { text: 'В игре', class: 'live' };
-        }
-        
-        return { text: 'Запланирован', class: 'scheduled' };
-    }
-  };
-  
-  const status = getMatchStatus();
+  const status = getMatchStatus(match);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ru-RU', {
