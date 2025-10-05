@@ -145,7 +145,8 @@ export async function predictionsHandler(
   env: any, 
   logger: Logger,
   cachedDataService?: any,
-  user?: any
+  user?: any,
+  prisma?: any
 ): Promise<Response> {
   try {
     if (!user) {
@@ -156,6 +157,13 @@ export async function predictionsHandler(
     }
 
     if (request.method === 'POST') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
       const body = await request.json() as any;
       const { matchId, predHome, predAway } = body || {};
       
@@ -165,17 +173,67 @@ export async function predictionsHandler(
           headers: { 'Content-Type': 'application/json' }
         });
       }
-      
-      // TODO: Implement prediction creation logic with direct Prisma access
-      return new Response(JSON.stringify({ 
-        message: 'Prediction creation not yet implemented in workers',
-        matchId,
-        predHome,
-        predAway,
-        user: user.name
-      }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
+
+      try {
+        // Check if match exists and is not locked
+        const match = await prisma.match.findUnique({ where: { id: matchId } });
+        if (!match) {
+          return new Response(JSON.stringify({ error: 'MATCH_NOT_FOUND' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        if (new Date() >= new Date(match.kickoffAt)) {
+          return new Response(JSON.stringify({ error: 'LOCKED' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Save current prediction to history if exists
+        const existing = await prisma.prediction.findUnique({ 
+          where: { userId_matchId: { userId: user.id, matchId } } 
+        });
+        
+        if (existing) {
+          await prisma.predictionHistory.create({
+            data: {
+              userId: user.id,
+              matchId,
+              predHome: existing.predHome,
+              predAway: existing.predAway,
+            },
+          });
+        }
+
+        // Create or update prediction
+        const prediction = await prisma.prediction.upsert({
+          where: { userId_matchId: { userId: user.id, matchId } },
+          create: { userId: user.id, matchId, predHome, predAway },
+          update: { predHome, predAway },
+        });
+
+        // Update firstPredAt for tie-break if needed
+        await prisma.score.upsert({
+          where: { userId: user.id },
+          create: { userId: user.id, firstPredAt: new Date() },
+          update: {
+            firstPredAt: (existing && existing.createdAt < new Date()) ? existing.createdAt : undefined,
+          },
+        });
+
+        return new Response(JSON.stringify({ prediction }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+      } catch (error) {
+        logger.error({ error }, 'Failed to create prediction');
+        return new Response(JSON.stringify({ error: 'PREDICTION_CREATION_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     return new Response(JSON.stringify({ 
