@@ -131,6 +131,11 @@ body {
   border-radius: 4px;
   flex: 1;
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 40%;
 }
 
 .match-date {
@@ -1185,6 +1190,29 @@ body {
   
   .bets-table .points {
     min-width: 40px;
+  }
+}
+
+/* Mobile responsive for match card header */
+@media (max-width: 480px) {
+  .match-stage {
+    font-size: 11px;
+    padding: 3px 6px;
+    max-width: 35%;
+  }
+  
+  .match-date {
+    font-size: 11px;
+    max-width: 35%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  
+  .match-status {
+    font-size: 9px;
+    padding: 2px 4px;
   }
 }
 
