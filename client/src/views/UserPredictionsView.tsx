@@ -298,7 +298,7 @@ function MatchPredictionCard({ match, prediction, onUpdate, onDelete, saving }: 
     );
   };
 
-  const hasResult = match.scoreHome !== null && match.scoreAway !== null;
+  const hasResult = match.scoreHome != null && match.scoreAway != null;
 
   return (
     <div className="match-card">

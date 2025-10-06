@@ -70,6 +70,7 @@ let globalCache: any = null;
 let globalCachedDataService: any = null;
 let globalLastApiSyncAtMs: number = 0;
 let globalIsApiSyncInProgress: boolean = false;
+let globalSyncStartTime: number = 0;
 
 // Main request handler
 export default {
@@ -133,24 +134,46 @@ export default {
         // Best-effort background sync before handling API route
         try {
           const now = Date.now();
-          const shouldTriggerSync = (now - globalLastApiSyncAtMs) > 60000 && !globalIsApiSyncInProgress;
+          const timeSinceLastSync = now - globalLastApiSyncAtMs;
+          const timeSinceSyncStarted = now - globalSyncStartTime;
+          
+          // Reset stuck sync flag if it's been more than 30 seconds
+          if (globalIsApiSyncInProgress && timeSinceSyncStarted > 30000) {
+            logger.warn({ timeSinceSyncStarted }, '[Worker] Resetting stuck sync flag');
+            globalIsApiSyncInProgress = false;
+          }
+          
+          const shouldTriggerSync = timeSinceLastSync > 60000 && !globalIsApiSyncInProgress;
+          
+          logger.info({ 
+            timeSinceLastSync, 
+            shouldTriggerSync, 
+            globalIsApiSyncInProgress,
+            timeSinceSyncStarted
+          }, '[Worker] Background sync check');
+          
           if (shouldTriggerSync) {
+            logger.info('[Worker] Triggering background API sync...');
             globalIsApiSyncInProgress = true;
+            globalSyncStartTime = now;
+            
             // Fire and forget background sync
             cachedDataService
               .syncMatchesFromAPI(new Date().getFullYear())
-              .then(() => {
+              .then((result: any) => {
                 globalLastApiSyncAtMs = Date.now();
+                logger.info({ count: result?.count }, '[Worker] Background API sync completed');
               })
               .catch((err: any) => {
-                logger.warn({ err }, 'Background API sync failed');
+                logger.error({ err: err?.message || err }, '[Worker] Background API sync failed');
               })
               .finally(() => {
                 globalIsApiSyncInProgress = false;
+                globalSyncStartTime = 0;
               });
           }
-        } catch (e) {
-          logger.warn({ e }, 'Failed to trigger background sync');
+        } catch (e: any) {
+          logger.error({ e: e?.message || e }, '[Worker] Failed to trigger background sync');
         }
 
         // Route handling with context

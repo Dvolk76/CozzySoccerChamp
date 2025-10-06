@@ -40,8 +40,8 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
 
   const translateStage = (stage: string) => {
     const stageTranslations: Record<string, string> = {
-      'LEAGUE_STAGE': 'Основной раунд',
-      'GROUP_STAGE': 'Основной раунд',
+      'LEAGUE_STAGE': 'Этап лиги',
+      'GROUP_STAGE': 'Этап лиги',
       'ROUND_OF_16': '1/8 финала',
       'QUARTER_FINALS': 'Четвертьфинал',
       'SEMI_FINALS': 'Полуфинал',
@@ -370,7 +370,7 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
 
 
   const kickoffTime = new Date(match.kickoffAt);
-  const hasScore = match.scoreHome !== null && match.scoreAway !== null;
+  const hasScore = match.scoreHome != null && match.scoreAway != null;
 
   // Track previous score to highlight changes
   const prevScoreRef = useRef<{ h?: number; a?: number } | null>(null);
@@ -414,8 +414,8 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
 
   const translateStage = (stage: string) => {
     const stageTranslations: Record<string, string> = {
-      'LEAGUE_STAGE': 'Основной раунд',
-      'GROUP_STAGE': 'Основной раунд',
+      'LEAGUE_STAGE': 'Этап лиги',
+      'GROUP_STAGE': 'Этап лиги',
       'ROUND_OF_16': '1/8 финала',
       'QUARTER_FINALS': 'Четвертьфинал',
       'SEMI_FINALS': 'Полуфинал',

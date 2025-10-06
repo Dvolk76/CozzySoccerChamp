@@ -26,7 +26,7 @@ export function getMatchStatus(match: {
   const now = new Date();
   const matchTime = new Date(match.kickoffAt);
   const minutesFromKickoff = Math.max(0, Math.floor((now.getTime() - matchTime.getTime()) / 60000));
-  const hasScore = match.scoreHome !== null && match.scoreAway !== null;
+  const hasScore = match.scoreHome != null && match.scoreAway != null;
   
   // Консервативные пороги для определения завершения матча
   const FINISH_MINUTES_HARD = 155;      // ~2h35m от начала (покрывает ET + остановки)

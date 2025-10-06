@@ -577,7 +577,7 @@ export async function adminHandler(
 
         // If scores were updated and match is finished, recalculate points
         const scoresChanged = (oldMatch?.scoreHome !== scoreHome || oldMatch?.scoreAway !== scoreAway) && 
-                             scoreHome !== null && scoreAway !== null && 
+                             scoreHome != null && scoreAway != null && 
                              (status === 'FINISHED' || match.status === 'FINISHED');
         
         if (scoresChanged) {

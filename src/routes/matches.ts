@@ -36,7 +36,7 @@ export function registerMatchRoutes(app: Express, prisma: PrismaClient, _logger:
     
     // If scores were updated and match is finished, recalculate points
     const scoresChanged = (oldMatch?.scoreHome !== scoreHome || oldMatch?.scoreAway !== scoreAway) && 
-                         scoreHome !== null && scoreAway !== null && 
+                         scoreHome != null && scoreAway != null && 
                          (status === 'FINISHED' || m.status === 'FINISHED');
     
     if (scoresChanged) {

@@ -4,13 +4,30 @@ const BASE_URL = 'https://api.football-data.org/v4';
 
 export async function syncChampionsLeague(prisma: PrismaClient, season: number, env?: any) {
   const token = env?.FOOTBALL_API_TOKEN || env?.FOOTBALL_DATA_API_TOKEN || process.env.FOOTBALL_API_TOKEN || process.env.FOOTBALL_DATA_API_TOKEN;
-  if (!token) throw new Error('FOOTBALL_API_TOKEN or FOOTBALL_DATA_API_TOKEN required');
+  if (!token) {
+    console.error('[syncChampionsLeague] No API token found in env:', {
+      hasEnvToken: !!env?.FOOTBALL_API_TOKEN,
+      hasEnvToken2: !!env?.FOOTBALL_DATA_API_TOKEN,
+      hasProcessToken: !!process.env.FOOTBALL_API_TOKEN
+    });
+    throw new Error('FOOTBALL_API_TOKEN or FOOTBALL_DATA_API_TOKEN required');
+  }
 
   // Competition code for UCL is usually CL
   const url = `${BASE_URL}/competitions/CL/matches?season=${season}`;
+  console.log('[syncChampionsLeague] Fetching from:', url);
+  
   const res = await fetch(url, { headers: { 'X-Auth-Token': token } });
-  if (!res.ok) throw new Error(`football-data error ${res.status}`);
+  console.log('[syncChampionsLeague] API response:', res.status, res.statusText);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('[syncChampionsLeague] API error:', res.status, errorText);
+    throw new Error(`football-data error ${res.status}: ${errorText}`);
+  }
+  
   const data = await res.json() as any;
+  console.log('[syncChampionsLeague] Received matches:', data.matches?.length || 0);
 
   // Upsert matches
   const tasks: Promise<any>[] = [];
@@ -22,7 +39,7 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
     const stage = m.stage ?? 'UNKNOWN';
     const group = m.group ?? null;
     const matchday = m.matchday ?? null;
-    const status = m.status ?? 'SCHEDULED';
+    let status = m.status ?? 'SCHEDULED';
 
     // Для лайв матчей берем счет из fullTime, если его нет - из halfTime
     // Для завершенных матчей всегда fullTime
@@ -42,7 +59,7 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
     const hoursFromKickoff = Math.max(0, (now.getTime() - matchTime.getTime()) / (1000 * 60 * 60));
     
     // Если матч был более 4 часов назад и есть счет, принудительно устанавливаем статус FINISHED
-    if (hoursFromKickoff >= 4 && (scoreHome !== null || scoreAway !== null)) {
+    if (hoursFromKickoff >= 4 && (scoreHome != null || scoreAway != null)) {
       status = 'FINISHED';
     }
     
@@ -80,7 +97,11 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
       })
     );
   }
+  
+  console.log('[syncChampionsLeague] Upserting', tasks.length, 'matches...');
   await Promise.all(tasks);
+  console.log('[syncChampionsLeague] Successfully synced', tasks.length, 'matches');
+  
   return { count: tasks.length };
 }
 
