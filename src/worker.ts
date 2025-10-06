@@ -263,7 +263,7 @@ async function handleApiRoute(
     } else if (path.startsWith('/api/predictions')) {
       response = await predictionsHandler(request, env, logger, cachedDataService, user, prisma);
     } else if (path.startsWith('/api/leaderboard')) {
-      response = await leaderboardHandler(request, env, logger, cachedDataService, user);
+      response = await leaderboardHandler(request, env, logger, cachedDataService, user, prisma);
     } else if (path.startsWith('/api/admin')) {
       response = await adminHandler(request, env, logger, cachedDataService, user, prisma);
     } else if (path.startsWith('/api/recalc')) {

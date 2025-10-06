@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api';
 import { useDataPolling } from './useAutoRefresh';
-import type { Match } from '../types';
+import type { Match, RoundLeaderboard } from '../types';
 
 // Custom hook for matches data with auto-refresh
 export function useMatches(autoRefresh: boolean = true) {
@@ -121,6 +121,53 @@ export function useLeaderboard(autoRefresh: boolean = true) {
 
   return {
     leaderboard,
+    loading,
+    error,
+    refresh,
+    isPolling,
+    lastUpdate
+  };
+}
+
+// Custom hook for leaderboard by rounds
+export function useLeaderboardByRounds(autoRefresh: boolean = false) {
+  const [rounds, setRounds] = useState<RoundLeaderboard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRounds = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await api.getLeaderboardByRounds();
+      setRounds(data.rounds || []);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch rounds leaderboard';
+      setError(errorMessage);
+      console.error('Failed to fetch rounds leaderboard:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Use polling hook for automatic updates (disabled by default since this is historical data)
+  const { isPolling, lastUpdate, manualPoll } = useDataPolling(
+    fetchRounds,
+    60000, // 60 seconds (slower refresh since historical data changes less frequently)
+    autoRefresh
+  );
+
+  // Initial fetch
+  useEffect(() => {
+    fetchRounds();
+  }, [fetchRounds]);
+
+  const refresh = useCallback(() => {
+    setLoading(true);
+    return manualPoll();
+  }, [manualPoll]);
+
+  return {
+    rounds,
     loading,
     error,
     refresh,

@@ -64,3 +64,19 @@ export interface Score {
 export interface LeaderboardItem extends Score {
   rank: number;
 }
+
+export interface RoundLeaderboardEntry {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  points: number;
+  exactCount: number;
+  diffCount: number;
+  outcomeCount: number;
+  cumulativePoints: number;
+}
+
+export interface RoundLeaderboard {
+  round: number;
+  leaderboard: RoundLeaderboardEntry[];
+}

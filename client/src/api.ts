@@ -127,6 +127,10 @@ class ApiClient {
     return this.get<{ leaderboard: any[] }>('/api/leaderboard');
   }
 
+  async getLeaderboardByRounds() {
+    return this.get<{ rounds: any[] }>('/api/leaderboard/by-rounds');
+  }
+
   // Admin
   async syncMatches(season?: number) {
     return this.post<{ count: number }>('/api/admin/sync', { 
