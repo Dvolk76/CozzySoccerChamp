@@ -149,6 +149,96 @@ export async function predictionsHandler(
   prisma?: any
 ): Promise<Response> {
   try {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // Handle GET /api/predictions/:userId/:matchId/history
+    if (path.match(/^\/api\/predictions\/[^\/]+\/[^\/]+\/history$/) && request.method === 'GET') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      const pathParts = path.split('/');
+      const targetUserId = pathParts[3];
+      const matchId = pathParts[4];
+
+      try {
+        // Get user info
+        const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+        if (!targetUser) {
+          return new Response(JSON.stringify({ error: 'USER_NOT_FOUND' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Get match info
+        const match = await prisma.match.findUnique({ where: { id: matchId } });
+        if (!match) {
+          return new Response(JSON.stringify({ error: 'MATCH_NOT_FOUND' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Get prediction history
+        const history = await prisma.predictionHistory.findMany({
+          where: {
+            userId: targetUserId,
+            matchId: matchId
+          },
+          orderBy: { createdAt: 'asc' }
+        });
+
+        // Get current prediction
+        const current = await prisma.prediction.findUnique({
+          where: {
+            userId_matchId: {
+              userId: targetUserId,
+              matchId: matchId
+            }
+          }
+        });
+
+        return new Response(JSON.stringify({
+          user: {
+            id: targetUser.id,
+            name: targetUser.name,
+            avatar: targetUser.avatar
+          },
+          match: {
+            id: match.id,
+            homeTeam: match.homeTeam,
+            awayTeam: match.awayTeam,
+            kickoffAt: match.kickoffAt
+          },
+          history: history.map((h: any) => ({
+            predHome: h.predHome,
+            predAway: h.predAway,
+            createdAt: h.createdAt
+          })),
+          current: current ? {
+            predHome: current.predHome,
+            predAway: current.predAway,
+            createdAt: current.createdAt
+          } : null,
+          totalChanges: history.length
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+      } catch (error) {
+        logger.error({ error }, 'Failed to get prediction history');
+        return new Response(JSON.stringify({ error: 'FAILED_TO_GET_HISTORY' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     if (!user) {
       return new Response(JSON.stringify({ error: 'NO_AUTH' }), {
         status: 401,
@@ -891,6 +981,61 @@ export async function adminHandler(
         });
       }
     }
+
+    // Handle DELETE /api/admin/users/:userId (delete single user)
+    if (path.match(/^\/api\/admin\/users\/[^\/]+$/) && request.method === 'DELETE') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const pathParts = path.split('/');
+        const userId = pathParts[4]; // /api/admin/users/{userId}
+        
+        if (!userId) {
+          return new Response(JSON.stringify({ error: 'USER_ID_REQUIRED' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Prevent admin from deleting themselves
+        if (userId === user.id) {
+          return new Response(JSON.stringify({ error: 'CANNOT_DELETE_SELF' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+        if (!targetUser) {
+          return new Response(JSON.stringify({ error: 'USER_NOT_FOUND' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Delete all dependent records (cascade delete)
+        await prisma.predictionHistory.deleteMany({ where: { userId } });
+        await prisma.prediction.deleteMany({ where: { userId } });
+        await prisma.score.deleteMany({ where: { userId } });
+        await prisma.user.delete({ where: { id: userId } });
+
+        logger.info({ userId, deletedUser: targetUser.name }, 'User deleted by admin');
+        return new Response(JSON.stringify({ success: true, deletedUser: targetUser.name }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to delete user');
+        return new Response(JSON.stringify({ error: 'DELETE_USER_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
     
     return new Response(JSON.stringify({ 
       message: 'Admin endpoint not found',
@@ -924,4 +1069,172 @@ export async function recalcHandler(
   }), {
     headers: { 'Content-Type': 'application/json' }
   });
+}
+
+export async function backupHandler(
+  request: Request,
+  env: any,
+  logger: Logger,
+  user?: any,
+  prisma?: any
+): Promise<Response> {
+  try {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    // Check admin permissions
+    if (!user || user.role !== 'ADMIN') {
+      return new Response(JSON.stringify({ error: 'FORBIDDEN' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Import backup service
+    const { createBackup, restoreBackup, cleanupOldBackups } = await import('../services/backup.js');
+
+    // POST /api/backup/create - Create manual backup
+    if (path === '/api/backup/create' && request.method === 'POST') {
+      try {
+        const result = await createBackup(env);
+        logger.info({ result }, 'Manual backup created');
+        
+        return new Response(JSON.stringify({
+          message: 'Backup created successfully',
+          ...result,
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error: any) {
+        logger.error({ error }, 'Backup creation failed');
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Backup creation failed',
+          details: error.message,
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // GET /api/backup/list - List available backups
+    if (path === '/api/backup/list' && request.method === 'GET') {
+      try {
+        if (!env.BACKUP_BUCKET) {
+          return new Response(JSON.stringify({
+            error: 'R2 bucket not configured',
+          }), {
+            status: 501,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const list = await env.BACKUP_BUCKET.list({ prefix: 'backup-' });
+        
+        const backups = (list.objects || []).map((obj: any) => ({
+          key: obj.key,
+          size: obj.size,
+          uploaded: obj.uploaded,
+          metadata: obj.customMetadata,
+        }));
+
+        return new Response(JSON.stringify({
+          success: true,
+          backups,
+          count: backups.length,
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error: any) {
+        logger.error({ error }, 'Failed to list backups');
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Failed to list backups',
+          details: error.message,
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // POST /api/backup/restore - Restore from backup
+    if (path === '/api/backup/restore' && request.method === 'POST') {
+      try {
+        const body = await request.json() as any;
+        const { backupKey } = body;
+
+        if (!backupKey) {
+          return new Response(JSON.stringify({
+            error: 'backupKey is required',
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        if (!env.BACKUP_BUCKET) {
+          return new Response(JSON.stringify({
+            error: 'R2 bucket not configured',
+          }), {
+            status: 501,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Load backup from R2
+        const object = await env.BACKUP_BUCKET.get(backupKey);
+        
+        if (!object) {
+          return new Response(JSON.stringify({
+            error: 'Backup not found',
+          }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const backupData = await object.json();
+        
+        // Restore data
+        const result = await restoreBackup(env, backupData);
+
+        logger.info({ result, backupKey }, 'Database restored from backup');
+
+        return new Response(JSON.stringify({
+          message: 'Database restored successfully',
+          ...result,
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error: any) {
+        logger.error({ error }, 'Restore failed');
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Restore failed',
+          details: error.message,
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    return new Response(JSON.stringify({
+      error: 'Backup endpoint not found',
+      path,
+      method: request.method
+    }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    logger.error({ error }, 'Backup handler error');
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 }

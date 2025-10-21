@@ -1,0 +1,80 @@
+{
+  "timestamp": "2025-10-06T15:36:34.267Z",
+  "version": "1.0",
+  "tables": {
+    "User": [],
+    "Match": [
+      {
+        "id": "match1",
+        "extId": "null",
+        "stage": "FINAL",
+        "group": "null",
+        "leg": "null",
+        "matchday": "null",
+        "homeTeam": "Real Madrid",
+        "awayTeam": "Barcelona",
+        "kickoffAt": "2025-09-20T20:00:00Z",
+        "status": "SCHEDULED",
+        "scoreHome": "null",
+        "scoreAway": "null",
+        "createdAt": "2025-09-18 17:46:04",
+        "updatedAt": "2025-09-18 17:46:04"
+      },
+      {
+        "id": "match2",
+        "extId": "null",
+        "stage": "SEMI_FINAL",
+        "group": "null",
+        "leg": "null",
+        "matchday": "null",
+        "homeTeam": "Manchester City",
+        "awayTeam": "Liverpool",
+        "kickoffAt": "2025-09-18T19:00:00Z",
+        "status": "FINISHED",
+        "scoreHome": "null",
+        "scoreAway": "null",
+        "createdAt": "2025-09-18 17:46:04",
+        "updatedAt": "2025-09-18 17:46:04"
+      },
+      {
+        "id": "match3",
+        "extId": "null",
+        "stage": "QUARTER_FINAL",
+        "group": "null",
+        "leg": "null",
+        "matchday": "null",
+        "homeTeam": "PSG",
+        "awayTeam": "Bayern Munich",
+        "kickoffAt": "2025-09-22T21:00:00Z",
+        "status": "SCHEDULED",
+        "scoreHome": "null",
+        "scoreAway": "null",
+        "createdAt": "2025-09-18 17:46:04",
+        "updatedAt": "2025-09-18 17:46:04"
+      }
+    ],
+    "Prediction": [],
+    "PredictionHistory": [],
+    "Score": []
+  },
+  "schema": [
+    {
+      "sql": "CREATE TABLE \"User\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"tg_user_id\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"avatar\" TEXT,\n    \"role\" TEXT NOT NULL DEFAULT 'USER' CHECK(\"role\" IN ('USER', 'ADMIN')),\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP\n)"
+    },
+    {
+      "sql": "CREATE TABLE \"Match\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"extId\" TEXT,\n    \"stage\" TEXT NOT NULL,\n    \"group\" TEXT,\n    \"leg\" INTEGER,\n    \"matchday\" INTEGER,\n    \"homeTeam\" TEXT NOT NULL,\n    \"awayTeam\" TEXT NOT NULL,\n    \"kickoffAt\" DATETIME NOT NULL,\n    \"status\" TEXT NOT NULL,\n    \"scoreHome\" INTEGER,\n    \"scoreAway\" INTEGER,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP\n)"
+    },
+    {
+      "sql": "CREATE TABLE \"Prediction\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"userId\" TEXT NOT NULL,\n    \"matchId\" TEXT NOT NULL,\n    \"predHome\" INTEGER NOT NULL,\n    \"predAway\" INTEGER NOT NULL,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"lockedAt\" DATETIME,\n    CONSTRAINT \"Prediction_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE,\n    CONSTRAINT \"Prediction_matchId_fkey\" FOREIGN KEY (\"matchId\") REFERENCES \"Match\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)"
+    },
+    {
+      "sql": "CREATE TABLE \"PredictionHistory\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"userId\" TEXT NOT NULL,\n    \"matchId\" TEXT NOT NULL,\n    \"predHome\" INTEGER NOT NULL,\n    \"predAway\" INTEGER NOT NULL,\n    \"createdAt\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"PredictionHistory_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE,\n    CONSTRAINT \"PredictionHistory_matchId_fkey\" FOREIGN KEY (\"matchId\") REFERENCES \"Match\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)"
+    },
+    {
+      "sql": "CREATE TABLE \"Score\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"userId\" TEXT NOT NULL,\n    \"pointsTotal\" INTEGER NOT NULL DEFAULT 0,\n    \"exactCount\" INTEGER NOT NULL DEFAULT 0,\n    \"diffCount\" INTEGER NOT NULL DEFAULT 0,\n    \"outcomeCount\" INTEGER NOT NULL DEFAULT 0,\n    \"firstPredAt\" DATETIME,\n    \"lastUpdated\" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Score_userId_fkey\" FOREIGN KEY (\"userId\") REFERENCES \"User\" (\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n)"
+    },
+    {
+      "sql": "CREATE TABLE _cf_METADATA (\n        key INTEGER PRIMARY KEY,\n        value BLOB\n      )"
+    }
+  ]
+}

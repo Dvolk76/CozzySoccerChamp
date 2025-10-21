@@ -2,6 +2,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import type { Match } from '../types';
 import { getMatchStatus, isMatchActive } from '../utils/matchStatus';
+import { PredictionHistoryModal } from './PredictionHistoryModal';
 
 interface MatchCardProps {
   match: Match;
@@ -26,6 +27,10 @@ function MatchCardInner({ match }: MatchCardProps) {
   const [betsLoading, setBetsLoading] = useState(false);
   const [betsError, setBetsError] = useState<string | null>(null);
   const [bets, setBets] = useState<Array<{ userId: string; name: string; tg_user_id?: string; predHome: number; predAway: number; points: number; createdAt: string }>>([]);
+
+  // History modal state
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const kickoffTime = new Date(match.kickoffAt);
   const isLocked = new Date() >= kickoffTime;
@@ -195,6 +200,16 @@ function MatchCardInner({ match }: MatchCardProps) {
         setBetsLoading(false);
       }
     }
+  };
+
+  const handlePredictionClick = (userId: string) => {
+    setSelectedUserId(userId);
+    setHistoryModalOpen(true);
+  };
+
+  const closeHistoryModal = () => {
+    setHistoryModalOpen(false);
+    setSelectedUserId(null);
   };
 
   return (
@@ -369,7 +384,13 @@ function MatchCardInner({ match }: MatchCardProps) {
                             </tr>
                           ) : (
                             bets.map((b) => (
-                              <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
+                              <tr 
+                                key={b.userId} 
+                                className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}
+                                onClick={() => handlePredictionClick(b.userId)}
+                                style={{ cursor: 'pointer' }}
+                                title="Нажмите, чтобы увидеть историю изменений"
+                              >
                                 <td className="nick">{b.name}</td>
                                 <td className="pred">{b.predHome}:{b.predAway}</td>
                                 <td className="points">{b.points}</td>
@@ -437,7 +458,13 @@ function MatchCardInner({ match }: MatchCardProps) {
                             </tr>
                           ) : (
                             bets.map((b) => (
-                              <tr key={b.userId} className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}>
+                              <tr 
+                                key={b.userId} 
+                                className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}
+                                onClick={() => handlePredictionClick(b.userId)}
+                                style={{ cursor: 'pointer' }}
+                                title="Нажмите, чтобы увидеть историю изменений"
+                              >
                                 <td className="nick">{b.name}</td>
                                 <td className="pred">{b.predHome}:{b.predAway}</td>
                                 <td className="points">{b.points}</td>
@@ -459,6 +486,15 @@ function MatchCardInner({ match }: MatchCardProps) {
         <div className="error-message">
           {error}
         </div>
+      )}
+
+      {/* History Modal */}
+      {historyModalOpen && selectedUserId && (
+        <PredictionHistoryModal
+          userId={selectedUserId}
+          matchId={match.id}
+          onClose={closeHistoryModal}
+        />
       )}
     </div>
   );

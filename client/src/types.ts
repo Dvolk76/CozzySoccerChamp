@@ -80,3 +80,30 @@ export interface RoundLeaderboard {
   round: number;
   leaderboard: RoundLeaderboardEntry[];
 }
+
+export interface PredictionHistoryEntry {
+  predHome: number;
+  predAway: number;
+  createdAt: string;
+}
+
+export interface PredictionHistoryResponse {
+  user: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+  match: {
+    id: string;
+    homeTeam: string;
+    awayTeam: string;
+    kickoffAt: string;
+  };
+  history: PredictionHistoryEntry[];
+  current: {
+    predHome: number;
+    predAway: number;
+    createdAt: string;
+  } | null;
+  totalChanges: number;
+}

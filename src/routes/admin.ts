@@ -262,6 +262,40 @@ export function registerAdminRoutes(app: Express, prisma: PrismaClient, logger: 
       res.status(500).json({ error: 'DELETE_PREDICTION_FAILED' });
     }
   });
+
+  // Delete single user (admin only)
+  app.delete('/api/admin/users/:userId', async (req: Request, res: Response) => {
+    const user = (req as any).authUser;
+    if (!user || user.role !== 'ADMIN') return res.status(403).json({ error: 'FORBIDDEN' });
+    
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'USER_ID_REQUIRED' });
+    }
+
+    // Prevent admin from deleting themselves
+    if (userId === user.id) {
+      return res.status(400).json({ error: 'CANNOT_DELETE_SELF' });
+    }
+
+    try {
+      const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+      if (!targetUser) return res.status(404).json({ error: 'USER_NOT_FOUND' });
+
+      // Delete all dependent records (cascade delete)
+      await prisma.predictionHistory.deleteMany({ where: { userId } });
+      await prisma.prediction.deleteMany({ where: { userId } });
+      await prisma.score.deleteMany({ where: { userId } });
+      await prisma.user.delete({ where: { id: userId } });
+
+      logger.info({ userId, deletedUser: targetUser.name }, 'User deleted by admin');
+      res.json({ success: true, deletedUser: targetUser.name });
+    } catch (e) {
+      logger.error({ e }, 'admin delete user error');
+      res.status(500).json({ error: 'DELETE_USER_FAILED' });
+    }
+  });
 }
 
 

@@ -19,7 +19,12 @@
     "prisma:migrate:d1": "npx wrangler d1 migrations apply cozy-soccer-champ-db",
     "prisma:deploy": "prisma migrate deploy",
     "d1:create": "npx wrangler d1 create cozy-soccer-champ-db",
-    "d1:migrations": "npx wrangler d1 migrations list cozy-soccer-champ-db"
+    "d1:migrations": "npx wrangler d1 migrations list cozy-soccer-champ-db",
+    "backup": "node scripts/manual-backup.mjs",
+    "backup:restore": "node scripts/restore-backup.mjs",
+    "backup:setup": "node scripts/auto-setup-backup.mjs",
+    "r2:create": "npx wrangler r2 bucket create cozy-soccer-backups",
+    "r2:list": "npx wrangler r2 bucket list"
   },
   "dependencies": {
     "@prisma/adapter-d1": "^5.17.0",

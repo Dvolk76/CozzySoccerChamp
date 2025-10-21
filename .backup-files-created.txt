@@ -1,0 +1,53 @@
+Система автоматического бекапа БД - Созданные файлы
+=====================================================
+
+CORE FILES (TypeScript):
+├── src/services/backup.ts           - Основной сервис бекапа
+├── src/routes/worker-adapters.ts    - API handlers (+backupHandler)
+├── src/cron/backup-job.ts           - Scheduled backup job
+└── src/worker.ts                    - Updated with scheduled() handler
+
+CLI SCRIPTS:
+├── scripts/manual-backup.mjs        - Локальный бекап через wrangler
+└── scripts/restore-backup.mjs       - Восстановление из локального файла
+
+CONFIG:
+├── wrangler.toml                    - Updated (cron triggers + R2 config)
+└── package.json                     - Updated (backup scripts)
+
+DOCUMENTATION:
+├── BACKUP_SYSTEM.md                 - Полная документация
+├── BACKUP_QUICKSTART.md             - Быстрый старт
+└── .backup-files-created.txt        - Этот файл
+
+ВОЗМОЖНОСТИ:
+✅ Автоматический бекап по расписанию (cron)
+✅ Ручной бекап через API
+✅ Локальный бекап через CLI
+✅ Хранение в R2 (Cloudflare Object Storage)
+✅ Отправка на webhook (альтернатива R2)
+✅ Telegram уведомления
+✅ Автоочистка старых бекапов (последние 30)
+✅ Восстановление через API или CLI
+✅ Экспорт схемы БД
+
+NPM КОМАНДЫ:
+npm run backup                       - Создать локальный бекап
+npm run backup:restore               - Восстановить из локального файла
+npm run r2:create                    - Создать R2 bucket
+npm run r2:list                      - Список R2 buckets
+
+API ENDPOINTS:
+POST   /api/backup/create            - Создать бекап (admin)
+GET    /api/backup/list              - Список бекапов (admin)
+POST   /api/backup/restore           - Восстановить (admin)
+
+СЛЕДУЮЩИЕ ШАГИ:
+1. npm run build && npm run deploy
+2. (Опционально) npm run r2:create
+3. (Опционально) Раскомментировать R2 в wrangler.toml
+4. (Опционально) wrangler secret put TELEGRAM_ADMIN_CHAT_ID
+
+См. BACKUP_QUICKSTART.md для быстрого старта
+См. BACKUP_SYSTEM.md для полной документации
+

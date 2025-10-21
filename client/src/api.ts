@@ -122,6 +122,10 @@ class ApiClient {
     });
   }
 
+  async getPredictionHistory(userId: string, matchId: string) {
+    return this.get<any>(`/api/predictions/${userId}/${matchId}/history`);
+  }
+
   // Leaderboard
   async getLeaderboard() {
     return this.get<{ leaderboard: any[] }>('/api/leaderboard');
@@ -165,6 +169,12 @@ class ApiClient {
 
   async deleteUserPrediction(userId: string, matchId: string) {
     return this.request<{ success: boolean }>(`/api/admin/users/${userId}/predictions/${matchId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deleteUser(userId: string) {
+    return this.request<{ success: boolean; deletedUser: string }>(`/api/admin/users/${userId}`, {
       method: 'DELETE',
     });
   }

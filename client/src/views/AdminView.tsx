@@ -21,9 +21,9 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [tapTimes, setTapTimes] = useState<number[]>([]);
-  const [wiping, setWiping] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const handleClaimAdmin = async () => {
     // Сбор «секретных» нажатий: 10 раз за 10 секунд
@@ -78,22 +78,20 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
     }
   };
 
-  const handleWipeUsers = async () => {
-    if (!password) {
-      setError('Введите пароль для подтверждения');
-      return;
-    }
-    if (!confirm('Удалить всех пользователей? Это действие необратимо.')) return;
-    setWiping(true);
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Удалить пользователя "${userName}"? Это действие необратимо.`)) return;
+    setDeletingUserId(userId);
     setError(null);
     try {
-      const response = await api.wipeUsers(password);
-      setMessage(`Удалено пользователей: ${response.deletedUsers}`);
+      await api.deleteUser(userId);
+      setMessage(`Пользователь "${userName}" успешно удален`);
       setTimeout(() => setMessage(null), 3000);
+      // Обновляем список пользователей
+      await loadUsers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка удаления пользователей');
+      setError(err instanceof Error ? err.message : 'Ошибка удаления пользователя');
     } finally {
-      setWiping(false);
+      setDeletingUserId(null);
     }
   };
 
@@ -241,7 +239,7 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
 
             <div className="match-card">
               <h3>Управление игроками</h3>
-              <p>Редактирование прогнозов пользователей</p>
+              <p>Редактирование прогнозов и удаление пользователей</p>
               {loadingUsers ? (
                 <div>Загрузка пользователей...</div>
               ) : (
@@ -250,8 +248,14 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
                     <p>Пользователей пока нет</p>
                   ) : (
                     users.map(u => (
-                      <div key={u.id} className="user-item">
-                        <div className="user-info">
+                      <div key={u.id} className="user-item" style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        padding: '8px',
+                        borderBottom: '1px solid var(--tg-theme-hint-color, #eee)'
+                      }}>
+                        <div className="user-info" style={{ flex: 1 }}>
                           {onEditUserPredictions ? (
                             <span 
                               className="user-name clickable"
@@ -263,35 +267,33 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
                           ) : (
                             <span className="user-name">{u.name}</span>
                           )}
-                          <span className="user-role">{u.role}</span>
+                          <span className="user-role" style={{ 
+                            marginLeft: '8px', 
+                            fontSize: '0.85em', 
+                            color: 'var(--tg-theme-hint-color)' 
+                          }}>
+                            {u.role}
+                          </span>
                         </div>
+                        <button
+                          onClick={() => handleDeleteUser(u.id, u.name)}
+                          disabled={deletingUserId === u.id || u.id === user?.id}
+                          className="predict-button"
+                          style={{
+                            background: 'var(--tg-theme-destructive-text-color, #dc3545)',
+                            fontSize: '0.85em',
+                            padding: '4px 8px',
+                            minWidth: '60px'
+                          }}
+                          title={u.id === user?.id ? 'Нельзя удалить себя' : 'Удалить пользователя'}
+                        >
+                          {deletingUserId === u.id ? '...' : '🗑️'}
+                        </button>
                       </div>
                     ))
                   )}
                 </div>
               )}
-            </div>
-
-            <div className="match-card">
-              <h3>Удалить всех пользователей</h3>
-              <p>Только для разработки. Требуется пароль для подтверждения.</p>
-              <div className="prediction-form" style={{ marginTop: '8px' }}>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Пароль"
-                  className="score-input"
-                  style={{ width: '120px' }}
-                />
-                <button
-                  onClick={handleWipeUsers}
-                  disabled={wiping || !password}
-                  className="predict-button"
-                >
-                  {wiping ? 'Удаление...' : 'Удалить пользователей'}
-                </button>
-              </div>
             </div>
           </>
         )}
