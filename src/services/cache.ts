@@ -210,7 +210,9 @@ export class CachedDataService {
               include: {
                 match: true
               }
-            }
+            },
+            // include score relation to get bonusPoints; in sqlite it's an array
+            scores: true
           }
         });
 
@@ -257,6 +259,11 @@ export class CachedDataService {
             }
           });
 
+          // Include tournament bonus points
+          const bonusPoints = Array.isArray((user as any).scores)
+            ? ((user as any).scores[0]?.bonusPoints ?? 0)
+            : ((user as any).scores?.bonusPoints ?? 0);
+
           return {
             id: user.id,
             user: {
@@ -265,7 +272,7 @@ export class CachedDataService {
               tg_user_id: user.tg_user_id,
               role: user.role
             },
-            pointsTotal: totalScore,
+            pointsTotal: totalScore + bonusPoints,
             exactCount: exactScores,
             diffCount: diffScores,
             outcomeCount: outcomeScores,

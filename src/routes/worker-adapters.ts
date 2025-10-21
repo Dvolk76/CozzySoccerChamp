@@ -696,6 +696,184 @@ export async function adminHandler(
         });
       }
     }
+
+    // GET /api/admin/teams - Get unique list of teams from matches
+    if (path === '/api/admin/teams' && request.method === 'GET') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const matches = await prisma.match.findMany({ select: { homeTeam: true, awayTeam: true } });
+        const set = new Set<string>();
+        for (const m of matches) {
+          if (m.homeTeam) set.add(m.homeTeam);
+          if (m.awayTeam) set.add(m.awayTeam);
+        }
+        const teams = Array.from(set).sort((a, b) => a.localeCompare(b, 'ru'));
+        return new Response(JSON.stringify({ teams }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to get teams');
+        return new Response(JSON.stringify({ error: 'GET_TEAMS_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // GET /api/admin/users/:userId/picks - Get user's tournament picks
+    if (path.match(/^\/api\/admin\/users\/[^\/]+\/picks$/) && request.method === 'GET') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const pathParts = path.split('/');
+        const userId = pathParts[4];
+        
+        if (!userId) {
+          return new Response(JSON.stringify({ error: 'USER_ID_REQUIRED' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const u = await prisma.user.findUnique({ where: { id: userId } });
+        if (!u) {
+          return new Response(JSON.stringify({ error: 'USER_NOT_FOUND' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
+        return new Response(JSON.stringify({ 
+          userId, 
+          championPick: (u as any).championPick ?? null, 
+          topScorerPick: (u as any).topScorerPick ?? null 
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to get picks');
+        return new Response(JSON.stringify({ error: 'GET_PICKS_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // POST /api/admin/users/:userId/picks - Set user's tournament picks
+    if (path.match(/^\/api\/admin\/users\/[^\/]+\/picks$/) && request.method === 'POST') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const pathParts = path.split('/');
+        const userId = pathParts[4];
+        
+        if (!userId) {
+          return new Response(JSON.stringify({ error: 'USER_ID_REQUIRED' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const body = await request.json() as any;
+        const { championPick, topScorerPick } = body || {};
+
+        const u = await prisma.user.update({
+          where: { id: userId },
+          data: {
+            championPick: typeof championPick === 'string' ? championPick : undefined,
+            topScorerPick: typeof topScorerPick === 'string' ? topScorerPick : undefined,
+          }
+        });
+        
+        return new Response(JSON.stringify({ user: u }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to set picks');
+        return new Response(JSON.stringify({ error: 'SET_PICKS_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // POST /api/admin/award-bonuses - Award bonuses at the end of tournament
+    if (path === '/api/admin/award-bonuses' && request.method === 'POST') {
+      if (!prisma) {
+        return new Response(JSON.stringify({ error: 'Database not available' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      try {
+        const body = await request.json() as any;
+        const { champion, topScorer, championPoints = 5, topScorerPoints = 5 } = body || {};
+        
+        if (!champion && !topScorer) {
+          return new Response(JSON.stringify({ error: 'BAD_INPUT' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        const users = await prisma.user.findMany();
+
+        const ops = users.map((u: any) => {
+          const championOk = champion && (u as any).championPick && (u as any).championPick === champion;
+          const topScorerOk = topScorer && (u as any).topScorerPick && (u as any).topScorerPick === topScorer;
+          const bonus = (championOk ? Number(championPoints) : 0) + (topScorerOk ? Number(topScorerPoints) : 0);
+          return prisma.score.upsert({
+            where: { userId: u.id },
+            create: {
+              userId: u.id,
+              bonusPoints: bonus,
+              lastUpdated: new Date()
+            },
+            update: {
+              bonusPoints: bonus,
+              lastUpdated: new Date()
+            }
+          });
+        });
+
+        await prisma.$transaction(ops);
+
+        if (cachedDataService) {
+          try {
+            await cachedDataService.refreshAll();
+          } catch (e) {
+            logger.warn({ e }, 'Failed to refresh cache after awarding bonuses');
+          }
+        }
+
+        return new Response(JSON.stringify({ updated: users.length }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to award bonuses');
+        return new Response(JSON.stringify({ error: 'AWARD_BONUSES_FAILED' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
     
     // Handle user predictions endpoint: /api/admin/users/:userId/predictions
     if (path.match(/^\/api\/admin\/users\/[^\/]+\/predictions$/) && request.method === 'GET') {

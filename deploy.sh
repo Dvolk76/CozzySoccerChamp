@@ -40,19 +40,44 @@ if [ ! -z "$DB_ID" ]; then
     rm wrangler.toml.bak 2>/dev/null || true
 fi
 
-# Run migrations
-echo "🔄 Running D1 migrations..."
-npx wrangler d1 execute cozy-soccer-champ-db --file=./migrations/0001_initial.sql
+# Run base migrations
+echo "🔄 Running D1 base migration (idempotent on create)..."
+npx wrangler d1 execute cozy-soccer-champ-db --file=./migrations/0001_initial.sql || true
+
+# Ensure safe schema updates for new features (idempotent)
+echo "🛡️  Ensuring D1 schema has tournament picks and bonus columns..."
+
+ensure_column() {
+  local table=$1
+  local column=$2
+  local ddl=$3
+  local present=$(npx wrangler d1 execute cozy-soccer-champ-db --command "PRAGMA table_info('${table}');" 2>/dev/null | grep -c "${column}")
+  if [ "$present" -eq 0 ]; then
+    echo "➡️  Adding column ${table}.${column}"
+    npx wrangler d1 execute cozy-soccer-champ-db --command "${ddl}" || {
+      echo "❌ Failed to add column ${table}.${column}"; exit 1;
+    }
+  else
+    echo "✅ Column exists: ${table}.${column}"
+  fi
+}
+
+# Add User.championPick (TEXT NULL)
+ensure_column "User" "championPick" "ALTER TABLE User ADD COLUMN championPick TEXT;"
+# Add User.topScorerPick (TEXT NULL)
+ensure_column "User" "topScorerPick" "ALTER TABLE User ADD COLUMN topScorerPick TEXT;"
+# Add Score.bonusPoints (INTEGER NOT NULL DEFAULT 0)
+ensure_column "Score" "bonusPoints" "ALTER TABLE Score ADD COLUMN bonusPoints INTEGER NOT NULL DEFAULT 0;"
 
 # Build backend
 echo "🔨 Building backend..."
 npm run build
 
-# Build frontend
+# Build frontend with explicit API base
 echo "🔨 Building frontend..."
-cd client
-npm run build
-cd ..
+API_BASE_URL="https://cozy-soccer-champ.cozzy-soccer.workers.dev"
+echo "VITE_API_BASE=${API_BASE_URL}" > client/.env
+cd client && npm run build && cd ..
 
 # Deploy backend to Workers
 echo "🚀 Deploying backend to Cloudflare Workers..."

@@ -24,6 +24,9 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [awardState, setAwardState] = useState<{ champion?: string; topScorer?: string; championPoints?: number; topScorerPoints?: number }>({ championPoints: 5, topScorerPoints: 5 });
+  const [teams, setTeams] = useState<string[]>([]);
+  const [awarding, setAwarding] = useState(false);
 
   const handleClaimAdmin = async () => {
     // Сбор «секретных» нажатий: 10 раз за 10 секунд
@@ -98,6 +101,8 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
   useEffect(() => {
     if (user?.role === 'ADMIN') {
       loadUsers();
+      // preload teams for award UI
+      api.getTeams().then(r => setTeams(r.teams)).catch(() => {});
     }
   }, [user]);
 
@@ -217,6 +222,77 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
               >
                 {recalcing ? 'Пересчёт...' : 'Пересчитать очки'}
               </button>
+            </div>
+
+            <div className="match-card">
+              <h3>Бонусы за итог турнира</h3>
+              <p>Начислить бонусные очки за угадавших чемпиона и лучшего бомбардира</p>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: 12, color: 'var(--tg-theme-hint-color)' }}>Чемпион</div>
+                  <select
+                    value={awardState.champion ?? ''}
+                    onChange={(e) => setAwardState(s => ({ ...s, champion: e.target.value || undefined }))}
+                    className="score-input"
+                  >
+                    <option value="">— не учитывать —</option>
+                    {teams.map(team => (
+                      <option key={team} value={team}>{team}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: 'var(--tg-theme-hint-color)' }}>Очки за чемпиона</div>
+                  <input
+                    type="number"
+                    value={awardState.championPoints ?? 5}
+                    onChange={(e) => setAwardState(s => ({ ...s, championPoints: Number(e.target.value) }))}
+                    className="score-input"
+                    style={{ width: 80 }}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: 'var(--tg-theme-hint-color)' }}>Лучший бомбардир</div>
+                  <input
+                    type="text"
+                    value={awardState.topScorer ?? ''}
+                    onChange={(e) => setAwardState(s => ({ ...s, topScorer: e.target.value || undefined }))}
+                    className="score-input"
+                    placeholder="Имя игрока"
+                    style={{ minWidth: 180 }}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: 'var(--tg-theme-hint-color)' }}>Очки за бомбардира</div>
+                  <input
+                    type="number"
+                    value={awardState.topScorerPoints ?? 5}
+                    onChange={(e) => setAwardState(s => ({ ...s, topScorerPoints: Number(e.target.value) }))}
+                    className="score-input"
+                    style={{ width: 80 }}
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!confirm('Начислить бонусные очки по итогам турнира? Действие перезапишет предыдущие бонусы.')) return;
+                    setAwarding(true);
+                    setError(null);
+                    try {
+                      await api.awardBonuses(awardState.champion, awardState.topScorer, awardState.championPoints, awardState.topScorerPoints);
+                      setMessage('Бонусы начислены');
+                      setTimeout(() => setMessage(null), 3000);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Ошибка начисления бонусов');
+                    } finally {
+                      setAwarding(false);
+                    }
+                  }}
+                  disabled={awarding}
+                  className="predict-button"
+                >
+                  {awarding ? 'Начисление...' : 'Начислить бонусы'}
+                </button>
+              </div>
             </div>
 
             <div className="match-card">

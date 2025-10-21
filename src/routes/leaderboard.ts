@@ -11,17 +11,25 @@ export function registerLeaderboardRoutes(app: Express, prisma: PrismaClient, lo
       const cachedDataService = (req as any).cachedDataService;
       if (!cachedDataService) {
         // Fallback to direct DB query if cache service not available
-        const items = await prisma.score.findMany({
-          include: { user: true },
-          orderBy: [
-            { pointsTotal: 'desc' },
-            { exactCount: 'desc' },
-            { diffCount: 'desc' },
-            { firstPredAt: 'asc' },
-          ],
-          take: 100,
-        });
-        return res.json({ leaderboard: items });
+        const items = await prisma.score.findMany({ include: { user: true } });
+
+        // Include bonusPoints in total and sort in-memory to mirror cached behavior
+        const leaderboard = items
+          .map((s) => ({
+            ...s,
+            pointsTotal: (s.pointsTotal || 0) + (s as any).bonusPoints || 0,
+          }))
+          .sort((a, b) => {
+            if (a.pointsTotal !== b.pointsTotal) return b.pointsTotal - a.pointsTotal;
+            if (a.exactCount !== b.exactCount) return b.exactCount - a.exactCount;
+            if (a.diffCount !== b.diffCount) return b.diffCount - a.diffCount;
+            if (a.outcomeCount !== b.outcomeCount) return b.outcomeCount - a.outcomeCount;
+            if (a.firstPredAt && b.firstPredAt) return new Date(a.firstPredAt).getTime() - new Date(b.firstPredAt).getTime();
+            return 0;
+          })
+          .slice(0, 100);
+
+        return res.json({ leaderboard });
       }
       
       const leaderboard = await cachedDataService.getLeaderboard();

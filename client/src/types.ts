@@ -5,6 +5,8 @@ export interface User {
   avatar?: string;
   role: 'USER' | 'ADMIN';
   createdAt: string;
+  championPick?: string | null;
+  topScorerPick?: string | null;
 }
 
 // Football Data API v4 match status enum (официальная документация)
@@ -59,6 +61,7 @@ export interface Score {
   firstPredAt?: string;
   lastUpdated: string;
   user: User;
+  bonusPoints?: number;
 }
 
 export interface LeaderboardItem extends Score {

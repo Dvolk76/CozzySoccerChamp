@@ -1,3 +1,13 @@
+## Safe schema updates (D1)
+
+This project includes an idempotent step in `deploy.sh` to ensure new columns exist on D1 without breaking existing data:
+
+- `User.championPick` (TEXT, nullable)
+- `User.topScorerPick` (TEXT, nullable)
+- `Score.bonusPoints` (INTEGER, default 0)
+
+The deploy script probes `PRAGMA table_info('<table>')` and applies `ALTER TABLE` only when a column is missing.
+
 # 🚀 Деплой на Cloudflare
 
 Этот гайд поможет тебе задеплоить Cozy Soccer Champ на платформу Cloudflare.

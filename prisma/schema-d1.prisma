@@ -19,6 +19,10 @@ model User {
   predictions Prediction[]
   scores       Score[]
   predictionHistories PredictionHistory[] @relation("UserHistory")
+
+  // Admin-set tournament picks
+  championPick  String?
+  topScorerPick String?
 }
 
 // Note: SQLite doesn't support enums, so we use String with validation in the application
@@ -80,6 +84,7 @@ model Score {
   outcomeCount Int      @default(0) // 2-point hits
   firstPredAt  DateTime? // earliest submission across all matches for tie-break
   lastUpdated  DateTime  @default(now())
+  bonusPoints  Int      @default(0) // tournament bonus points (champion/top scorer)
 
   user User @relation(fields: [userId], references: [id])
 

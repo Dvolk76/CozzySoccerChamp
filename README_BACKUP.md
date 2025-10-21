@@ -1,3 +1,15 @@
+### Postgres safe migration for picks/bonus
+
+Apply before deploying code that references new columns:
+
+```
+npx prisma migrate dev --name add-picks-bonuses
+# or, manual SQL:
+ALTER TABLE "User" ADD COLUMN "championPick" TEXT NULL;
+ALTER TABLE "User" ADD COLUMN "topScorerPick" TEXT NULL;
+ALTER TABLE "Score" ADD COLUMN "bonusPoints" INTEGER NOT NULL DEFAULT 0;
+```
+
 # 🎉 Система автоматического бекапа установлена!
 
 ## ✅ Готово и работает:

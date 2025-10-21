@@ -179,6 +179,31 @@ class ApiClient {
     });
   }
 
+  // Admin tournament picks & teams
+  async getTeams() {
+    return this.get<{ teams: string[] }>(`/api/admin/teams`);
+  }
+
+  async getUserPicks(userId: string) {
+    return this.get<{ userId: string; championPick: string | null; topScorerPick: string | null }>(`/api/admin/users/${userId}/picks`);
+  }
+
+  async setUserPicks(userId: string, championPick?: string | null, topScorerPick?: string | null) {
+    return this.post<{ user: any }>(`/api/admin/users/${userId}/picks`, {
+      championPick,
+      topScorerPick
+    });
+  }
+
+  async awardBonuses(champion?: string, topScorer?: string, championPoints?: number, topScorerPoints?: number) {
+    return this.post<{ updated: number }>(`/api/admin/award-bonuses`, {
+      champion,
+      topScorer,
+      championPoints,
+      topScorerPoints
+    });
+  }
+
   // Cache management
   async refreshCache() {
     return this.post<{ matches: number; leaderboard: number }>('/api/admin/refresh-cache', {});

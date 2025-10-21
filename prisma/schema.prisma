@@ -17,6 +17,9 @@ model User {
   predictions         Prediction[]
   predictionHistories PredictionHistory[] @relation("UserHistory")
   scores              Score?
+  // Admin-set tournament picks
+  championPick        String?
+  topScorerPick       String?
 }
 
 model Match {
@@ -72,6 +75,8 @@ model Score {
   outcomeCount Int       @default(0)
   firstPredAt  DateTime?
   lastUpdated  DateTime  @default(now())
+  // Additional points for end-of-tournament bonuses (champion/top scorer)
+  bonusPoints  Int       @default(0)
   user         User      @relation(fields: [userId], references: [id])
 }
 

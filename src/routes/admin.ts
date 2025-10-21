@@ -136,6 +136,26 @@ export function registerAdminRoutes(app: Express, prisma: PrismaClient, logger: 
     }
   });
 
+  // Get unique list of teams from matches
+  app.get('/api/admin/teams', async (req: Request, res: Response) => {
+    const user = (req as any).authUser;
+    if (!user || user.role !== 'ADMIN') return res.status(403).json({ error: 'FORBIDDEN' });
+
+    try {
+      const matches = await prisma.match.findMany({ select: { homeTeam: true, awayTeam: true } });
+      const set = new Set<string>();
+      for (const m of matches) {
+        if (m.homeTeam) set.add(m.homeTeam);
+        if (m.awayTeam) set.add(m.awayTeam);
+      }
+      const teams = Array.from(set).sort((a, b) => a.localeCompare(b, 'ru'));
+      res.json({ teams });
+    } catch (e) {
+      logger.error({ e }, 'get teams error');
+      res.status(500).json({ error: 'GET_TEAMS_FAILED' });
+    }
+  });
+
   // Get user's predictions for admin editing
   app.get('/api/admin/users/:userId/predictions', async (req: Request, res: Response) => {
     const user = (req as any).authUser;
@@ -162,6 +182,94 @@ export function registerAdminRoutes(app: Express, prisma: PrismaClient, logger: 
     } catch (e) {
       logger.error({ e }, 'get user predictions error');
       res.status(500).json({ error: 'GET_PREDICTIONS_FAILED' });
+    }
+  });
+
+  // Get/Set tournament picks for a user
+  app.get('/api/admin/users/:userId/picks', async (req: Request, res: Response) => {
+    const user = (req as any).authUser;
+    if (!user || user.role !== 'ADMIN') return res.status(403).json({ error: 'FORBIDDEN' });
+
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ error: 'USER_ID_REQUIRED' });
+
+    try {
+      const u = await prisma.user.findUnique({ where: { id: userId } });
+      if (!u) return res.status(404).json({ error: 'USER_NOT_FOUND' });
+      res.json({ userId, championPick: (u as any).championPick ?? null, topScorerPick: (u as any).topScorerPick ?? null });
+    } catch (e) {
+      logger.error({ e }, 'get picks error');
+      res.status(500).json({ error: 'GET_PICKS_FAILED' });
+    }
+  });
+
+  app.post('/api/admin/users/:userId/picks', async (req: Request, res: Response) => {
+    const user = (req as any).authUser;
+    if (!user || user.role !== 'ADMIN') return res.status(403).json({ error: 'FORBIDDEN' });
+
+    const { userId } = req.params;
+    const { championPick, topScorerPick } = req.body || {};
+    if (!userId) return res.status(400).json({ error: 'USER_ID_REQUIRED' });
+
+    try {
+      const u = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          championPick: typeof championPick === 'string' ? championPick : undefined,
+          topScorerPick: typeof topScorerPick === 'string' ? topScorerPick : undefined,
+        }
+      });
+      res.json({ user: u });
+    } catch (e) {
+      logger.error({ e }, 'set picks error');
+      res.status(500).json({ error: 'SET_PICKS_FAILED' });
+    }
+  });
+
+  // Award bonuses at the end of tournament
+  app.post('/api/admin/award-bonuses', async (req: Request, res: Response) => {
+    const user = (req as any).authUser;
+    if (!user || user.role !== 'ADMIN') return res.status(403).json({ error: 'FORBIDDEN' });
+
+    const { champion, topScorer, championPoints = 5, topScorerPoints = 5 } = req.body || {};
+    if (!champion && !topScorer) return res.status(400).json({ error: 'BAD_INPUT' });
+
+    try {
+      const users = await prisma.user.findMany();
+
+      const ops = users.map(u => {
+        const championOk = champion && (u as any).championPick && (u as any).championPick === champion;
+        const topScorerOk = topScorer && (u as any).topScorerPick && (u as any).topScorerPick === topScorer;
+        const bonus = (championOk ? Number(championPoints) : 0) + (topScorerOk ? Number(topScorerPoints) : 0);
+        return prisma.score.upsert({
+          where: { userId: u.id },
+          create: {
+            userId: u.id,
+            bonusPoints: bonus,
+            lastUpdated: new Date()
+          },
+          update: {
+            bonusPoints: bonus,
+            lastUpdated: new Date()
+          }
+        });
+      });
+
+      await prisma.$transaction(ops);
+
+      const cachedDataService = (req as any).cachedDataService;
+      if (cachedDataService) {
+        try {
+          await cachedDataService.refreshAll();
+        } catch (e) {
+          logger.warn({ e }, 'Failed to refresh cache after awarding bonuses');
+        }
+      }
+
+      res.json({ updated: users.length });
+    } catch (e) {
+      logger.error({ e }, 'award bonuses error');
+      res.status(500).json({ error: 'AWARD_BONUSES_FAILED' });
     }
   });
 

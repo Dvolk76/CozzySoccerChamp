@@ -41,16 +41,29 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
     const matchday = m.matchday ?? null;
     let status = m.status ?? 'SCHEDULED';
 
-    // Для лайв матчей берем счет из fullTime, если его нет - из halfTime
-    // Для завершенных матчей всегда fullTime
-    let scoreHome = m.score?.fullTime?.home ?? null;
-    let scoreAway = m.score?.fullTime?.away ?? null;
-    
-    // Если fullTime счета нет, но есть halfTime - используем его для лайв матчей
-    if ((scoreHome === null || scoreAway === null) && 
-        (status === 'LIVE' || status === 'IN_PLAY' || status === 'PAUSED' || status === 'TIMED')) {
-      scoreHome = m.score?.halfTime?.home ?? scoreHome;
-      scoreAway = m.score?.halfTime?.away ?? scoreAway;
+    // Определяем счет в зависимости от статуса
+    // - Для завершенных матчей используем только fullTime
+    // - Для лайв матчей берем best-available: fullTime -> regularTime -> halfTime
+    let scoreHome: number | null = null;
+    let scoreAway: number | null = null;
+
+    const isLiveLike = status === 'LIVE' || status === 'IN_PLAY' || status === 'PAUSED' || status === 'TIMED';
+    if (status === 'FINISHED') {
+      scoreHome = m.score?.fullTime?.home ?? null;
+      scoreAway = m.score?.fullTime?.away ?? null;
+    } else if (isLiveLike) {
+      scoreHome =
+        (m.score?.fullTime?.home ??
+         m.score?.regularTime?.home ??
+         m.score?.halfTime?.home ?? null);
+      scoreAway =
+        (m.score?.fullTime?.away ??
+         m.score?.regularTime?.away ??
+         m.score?.halfTime?.away ?? null);
+    } else {
+      // До начала матча счет неизвестен
+      scoreHome = null;
+      scoreAway = null;
     }
 
     // Дополнительная логика для исправления статусов старых матчей

@@ -73,6 +73,17 @@ npx wrangler secret list 2>/dev/null || echo "No secrets found"
 # Build test
 echo ""
 echo "🔨 Testing build..."
+# Ensure Prisma client is up to date for both PG and D1
+if npm run prisma:generate > /dev/null 2>&1; then
+    echo "✅ Prisma client generated (PG)"
+else
+    echo "⚠️  Failed to generate Prisma client (PG)."
+fi
+if npm run prisma:generate:d1 > /dev/null 2>&1; then
+    echo "✅ Prisma client generated (D1)"
+else
+    echo "⚠️  Failed to generate Prisma client (D1)."
+fi
 if npm run build > /dev/null 2>&1; then
     echo "✅ Backend build successful"
 else

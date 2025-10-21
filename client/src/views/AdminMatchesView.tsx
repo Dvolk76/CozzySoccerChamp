@@ -19,10 +19,25 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
   const [data, setData] = useState<UserPredictionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [teams, setTeams] = useState<string[]>([]);
+  const [picks, setPicks] = useState<{ championPick: string | null; topScorerPick: string | null } | null>(null);
+  const [savingPicks, setSavingPicks] = useState(false);
   const { collapsedGroups, collapsedDays, initializedDays, setCollapsedGroups, setCollapsedDays, setInitializedDays, toggleGroup, toggleDay } = useMatchesUiState();
 
   useEffect(() => {
     loadUserPredictions();
+    (async () => {
+      try {
+        const [{ teams }, userPicks] = await Promise.all([
+          api.getTeams(),
+          api.getUserPicks(userId)
+        ]);
+        setTeams(teams);
+        setPicks({ championPick: userPicks.championPick, topScorerPick: userPicks.topScorerPick });
+      } catch (e) {
+        // ignore
+      }
+    })();
   }, [userId]);
 
   const loadUserPredictions = async () => {
@@ -275,6 +290,51 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
       <div className="header">
         <button onClick={onBack} className="back-button">← Назад</button>
         📝 Прогнозы: {data.user.name}
+      </div>
+
+      <div className="match-card" style={{ marginBottom: '12px' }}>
+        <h3>Турнирные выборы</h3>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--tg-theme-hint-color)' }}>Чемпион</div>
+            <select
+              value={picks?.championPick ?? ''}
+              onChange={(e) => setPicks(prev => ({ ...(prev || { championPick: null, topScorerPick: null }), championPick: e.target.value || null }))}
+              className="score-input"
+            >
+              <option value="">— не выбран —</option>
+              {teams.map(team => (
+                <option key={team} value={team}>{team}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--tg-theme-hint-color)' }}>Лучший бомбардир</div>
+            <input
+              type="text"
+              value={picks?.topScorerPick ?? ''}
+              onChange={(e) => setPicks(prev => ({ ...(prev || { championPick: null, topScorerPick: null }), topScorerPick: e.target.value || null }))}
+              className="score-input"
+              placeholder="Имя игрока"
+              style={{ minWidth: 180 }}
+            />
+          </div>
+          <button
+            className="predict-button"
+            disabled={savingPicks}
+            onClick={async () => {
+              if (!picks) return;
+              setSavingPicks(true);
+              try {
+                await api.setUserPicks(userId, picks.championPick ?? null, picks.topScorerPick ?? null);
+              } finally {
+                setSavingPicks(false);
+              }
+            }}
+          >
+            {savingPicks ? 'Сохранение...' : 'Сохранить выборы'}
+          </button>
+        </div>
       </div>
       
       {Object.entries(groupedMatches).map(([groupName, dayGroups]) => {
