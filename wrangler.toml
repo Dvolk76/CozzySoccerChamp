@@ -30,3 +30,18 @@ PAGES_HOST = "cozzysoccerchamp.pages.dev"
 # wrangler secret put SESSION_SECRET
 # wrangler secret put TELEGRAM_BOT_TOKEN
 # wrangler secret put FOOTBALL_API_TOKEN
+# wrangler secret put TELEGRAM_ADMIN_CHAT_ID  # Optional: for backup notifications
+
+# Cron jobs:
+# - Database backups: daily at 03:00 UTC
+# - Live score sync: every 3 minutes (during match days)
+[triggers]
+crons = [
+  "0 3 * * *",      # Daily backup at 03:00 UTC
+  "*/3 * * * *"     # Live sync every 3 minutes
+]
+
+# R2 bucket for storing backups
+[[r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "cozy-soccer-backups"

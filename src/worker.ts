@@ -14,6 +14,9 @@ export interface Env {
   NODE_ENV: string;
   LOG_LEVEL: string;
   PAGES_HOST?: string; // e.g. 14309aa5.cozzysoccerchamp.pages.dev
+  BACKUP_BUCKET?: R2Bucket; // R2 bucket for backups
+  BACKUP_WEBHOOK_URL?: string; // Webhook URL for sending backups
+  TELEGRAM_ADMIN_CHAT_ID?: string; // Telegram chat ID for backup notifications
 }
 
 // Create logger for Workers environment
@@ -112,6 +115,55 @@ export default {
             ...corsHeaders,
           },
         });
+      }
+
+      // Public endpoint for getting Telegram chat ID (no auth required)
+      if (url.pathname === '/api/get-telegram-chat-id' && request.method === 'GET') {
+        try {
+          const token = env.TELEGRAM_BOT_TOKEN;
+          if (!token) {
+            return new Response(JSON.stringify({ error: 'TELEGRAM_BOT_TOKEN not set' }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+          }
+          
+          const telegramResponse = await fetch(`https://api.telegram.org/bot${token}/getUpdates?limit=10`);
+          const data = await telegramResponse.json() as any;
+          
+          if (!data.ok || !data.result || data.result.length === 0) {
+            return new Response(JSON.stringify({
+              error: 'No messages found',
+              hint: 'Please send any message to your bot first, then try again',
+              instructions: 'Open your bot in Telegram and send: /start'
+            }), {
+              status: 404,
+              headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+          }
+          
+          const lastUpdate = data.result[data.result.length - 1];
+          const chatId = lastUpdate.message?.chat?.id || lastUpdate.message?.from?.id;
+          const firstName = lastUpdate.message?.from?.first_name || 'User';
+          const username = lastUpdate.message?.from?.username || '';
+          
+          return new Response(JSON.stringify({
+            success: true,
+            chatId,
+            firstName,
+            username,
+            messageCount: data.result.length,
+            nextStep: `Run: wrangler secret put TELEGRAM_ADMIN_CHAT_ID\nThen enter: ${chatId}`
+          }), {
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        } catch (error: any) {
+          logger.error({ error }, 'Failed to get Telegram chat ID');
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        }
       }
 
       // API routes
@@ -226,6 +278,35 @@ export default {
       });
     }
   },
+
+  // Scheduled event handler (cron jobs)
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    const logger = createLogger(env);
+    logger.info({ cron: event.cron, scheduledTime: event.scheduledTime }, 'Scheduled event triggered');
+
+    try {
+      // Определяем тип cron job по расписанию
+      // "0 3 * * *" = backup (ежедневно в 03:00 UTC)
+      // "*/3 * * * *" = live sync (каждые 3 минуты)
+      
+      if (event.cron === '0 3 * * *') {
+        // Daily backup
+        logger.info('[Cron] Running daily backup job');
+        const { handleScheduledBackup } = await import('./cron/backup-job.js');
+        await handleScheduledBackup(event, env, ctx);
+      } else if (event.cron === '*/3 * * * *') {
+        // Live score sync
+        logger.info('[Cron] Running live score sync job');
+        const { handleLiveSyncJob } = await import('./cron/live-sync-job.js');
+        await handleLiveSyncJob(event, env, ctx);
+      } else {
+        logger.warn({ cron: event.cron }, '[Cron] Unknown cron schedule');
+      }
+    } catch (error) {
+      logger.error({ error, cron: event.cron }, 'Scheduled job failed');
+      throw error;
+    }
+  },
 };
 
 // Handle API routes
@@ -268,6 +349,9 @@ async function handleApiRoute(
       response = await adminHandler(request, env, logger, cachedDataService, user, prisma);
     } else if (path.startsWith('/api/recalc')) {
       response = await recalcHandler(request, env, logger, cachedDataService, user);
+    } else if (path.startsWith('/api/backup')) {
+      const { backupHandler } = await import('./routes/worker-adapters.js');
+      response = await backupHandler(request, env, logger, user, prisma);
     } else {
       response = new Response(JSON.stringify({ error: 'Not Found' }), {
         status: 404,
