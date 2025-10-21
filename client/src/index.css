@@ -1258,6 +1258,24 @@ body {
   padding: 24px 8px;
 }
 
+/* Make 'no changes' message visually consistent with footer notes */
+.modal-empty {
+  margin-top: 12px;
+  padding: 12px;
+  text-align: center;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--badge-bg-color);
+}
+.modal-empty p {
+  color: var(--tg-theme-hint-color);
+  font-size: 13px;
+}
+.modal-empty p:first-child {
+  color: var(--tg-theme-text-color);
+  font-weight: 600;
+}
+
 .modal-hint {
   color: var(--tg-theme-hint-color);
   margin-top: 8px;
