@@ -228,7 +228,9 @@ function MatchCardInner({ match }: MatchCardProps) {
     <div className="match-card">
       <div className="match-header">
         <span className="match-stage">{translateStage(match.stage)}</span>
-        <span className={`match-status ${status.class}`}>{status.text}</span>
+        {!isLive && (
+          <span className={`match-status ${status.class}`}>{status.text}</span>
+        )}
         <span className="match-date">{formatDate(kickoffTime)}</span>
       </div>
       
