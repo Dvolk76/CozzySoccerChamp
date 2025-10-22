@@ -408,6 +408,7 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
   };
   
   const status = getMatchStatus();
+  const isLive = ['LIVE', 'IN_PLAY', 'PAUSED'].includes(match.status);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ru-RU', {
@@ -533,8 +534,13 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
       
       <div className="match-teams">
         <div className="team">{match.homeTeam}</div>
-        <div className={`score ${scoreChanged ? `score-changed-${scoreChanged}` : ''}`}>
-          {hasScore ? `${match.scoreHome}:${match.scoreAway}` : 'vs'}
+        <div className="score-wrapper">
+          <div className={`score ${scoreChanged ? `score-changed-${scoreChanged}` : ''} ${isLive ? 'score-live' : ''}`}>
+            {hasScore ? `${match.scoreHome}:${match.scoreAway}` : 'vs'}
+          </div>
+          {isLive && hasScore && (
+            <span className="live-score-badge">LIVE</span>
+          )}
         </div>
         <div className="team">{match.awayTeam}</div>
       </div>

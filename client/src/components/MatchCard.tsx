@@ -222,8 +222,13 @@ function MatchCardInner({ match }: MatchCardProps) {
       
       <div className="match-teams">
         <div className="team">{match.homeTeam}</div>
-        <div className={`score ${scoreChanged ? `score-changed-${scoreChanged}` : ''}`}>
-          {hasScore ? `${match.scoreHome}:${match.scoreAway}` : 'vs'}
+        <div className="score-wrapper">
+          <div className={`score ${scoreChanged ? `score-changed-${scoreChanged}` : ''} ${isLive ? 'score-live' : ''}`}>
+            {hasScore ? `${match.scoreHome}:${match.scoreAway}` : 'vs'}
+          </div>
+          {isLive && hasScore && (
+            <span className="live-score-badge">LIVE</span>
+          )}
         </div>
         <div className="team">{match.awayTeam}</div>
       </div>
