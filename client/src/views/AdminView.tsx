@@ -201,14 +201,32 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
             </div>
 
             <div className="match-card">
-              <h3>Синхронизация матчей</h3>
-              <p>Загрузить расписание матчей Лиги чемпионов из football-data.org (кэшируется на 1 минуту)</p>
+              <h3>🔄 Синхронизация матчей</h3>
+              <p>Загрузить расписание матчей и live счета из football-data.org</p>
+              {stats.lastMatchUpdate && (() => {
+                const lastUpdate = new Date(stats.lastMatchUpdate);
+                const minutesAgo = Math.floor((Date.now() - lastUpdate.getTime()) / 60000);
+                const isStale = minutesAgo > 10;
+                return isStale ? (
+                  <div className="error-message" style={{ marginBottom: '12px' }}>
+                    ⚠️ Данные устарели на {minutesAgo} минут. Рекомендуется синхронизация!
+                  </div>
+                ) : (
+                  <div style={{ color: '#10b981', marginBottom: '12px', fontSize: '14px' }}>
+                    ✅ Данные актуальны (обновлено {minutesAgo} мин. назад)
+                  </div>
+                );
+              })()}
               <button
                 onClick={handleSync}
                 disabled={syncing}
                 className="predict-button"
+                style={stats.lastMatchUpdate && ((Date.now() - new Date(stats.lastMatchUpdate).getTime()) / 60000) > 10 ? {
+                  background: '#ef4444',
+                  animation: 'pulse 2s ease-in-out infinite'
+                } : undefined}
               >
-                {syncing ? 'Синхронизация...' : 'Синхронизировать календарь'}
+                {syncing ? '⏳ Синхронизация...' : '🔄 Синхронизировать сейчас'}
               </button>
             </div>
 
