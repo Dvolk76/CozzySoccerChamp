@@ -156,9 +156,10 @@ class ApiClient {
   }
 
   // Admin
-  async syncMatches(season?: number) {
+  async syncMatches(season?: number, force: boolean = true) {
     return this.post<{ count: number }>('/api/admin/sync', { 
-      season: season || new Date().getFullYear() 
+      season: season || new Date().getFullYear(),
+      force: force  // Принудительная синхронизация игнорируя кэш
     });
   }
 

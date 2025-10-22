@@ -57,10 +57,15 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
     setSyncing(true);
     setError(null);
     try {
+      console.log('🔄 Starting manual sync...');
       const response = await api.syncMatches();
+      console.log('✅ Sync response:', response);
       setMessage(`Синхронизировано ${response.count} матчей`);
-      setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => setMessage(null), 5000);
+      // Обновляем статистику после синхронизации
+      window.location.reload();
     } catch (err) {
+      console.error('❌ Sync error:', err);
       setError(err instanceof Error ? err.message : 'Ошибка синхронизации');
     } finally {
       setSyncing(false);

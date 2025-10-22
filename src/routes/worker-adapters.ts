@@ -575,12 +575,19 @@ export async function adminHandler(
     if (path === '/api/admin/sync' && request.method === 'POST') {
       const body = await request.json() as any;
       const season = Number(body?.season) || 2025; // Current Champions League season 2025-26
+      const force = body?.force === true;
       
       if (!cachedDataService) {
         return new Response(JSON.stringify({ error: 'Cache service not available' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
         });
+      }
+      
+      // Если force=true, очищаем кэш перед синхронизацией
+      if (force) {
+        logger.info({ season, force }, 'Force sync requested, invalidating cache');
+        cachedDataService.cache.invalidate(`api_sync_${season}`);
       }
       
       const result = await cachedDataService.syncMatchesFromAPI(season);

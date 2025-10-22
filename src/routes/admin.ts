@@ -58,6 +58,7 @@ export function registerAdminRoutes(app: Express, prisma: PrismaClient, logger: 
     const user = (req as any).authUser;
     if (!user || user.role !== 'ADMIN') return res.status(403).json({ error: 'FORBIDDEN' });
     const season = Number(req.body?.season) || new Date().getUTCFullYear();
+    const force = req.body?.force === true;
     
     try {
       const cachedDataService = (req as any).cachedDataService;
@@ -66,6 +67,12 @@ export function registerAdminRoutes(app: Express, prisma: PrismaClient, logger: 
         const { syncChampionsLeague } = await import('../services/footballData.js');
         const result = await syncChampionsLeague(prisma, season);
         return res.json(result);
+      }
+      
+      // Если force=true, очищаем кэш перед синхронизацией
+      if (force) {
+        logger.info({ season, force }, 'Force sync requested, invalidating cache');
+        cachedDataService.cache.invalidate(`api_sync_${season}`);
       }
       
       const result = await cachedDataService.syncMatchesFromAPI(season);
