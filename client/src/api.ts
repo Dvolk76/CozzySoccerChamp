@@ -106,7 +106,27 @@ class ApiClient {
 
   // Matches
   async getMatches() {
-    return this.get<{ matches: any[] }>('/api/matches');
+    const result = await this.get<{ matches: any[] }>('/api/matches');
+    
+    // Debug: показываем все live матчи
+    const liveMatches = result.matches.filter((m: any) => 
+      ['IN_PLAY', 'LIVE', 'PAUSED', 'TIMED'].includes(m.status) ||
+      (new Date(m.kickoffAt) <= new Date() && !['FINISHED', 'CANCELLED', 'POSTPONED'].includes(m.status))
+    );
+    
+    if (liveMatches.length > 0) {
+      console.log('🟢 LIVE MATCHES FROM API:', liveMatches.map((m: any) => ({
+        teams: `${m.homeTeam} vs ${m.awayTeam}`,
+        status: m.status,
+        scoreHome: m.scoreHome,
+        scoreAway: m.scoreAway,
+        kickoffAt: m.kickoffAt
+      })));
+    } else {
+      console.log('⚪ No LIVE matches found in API response');
+    }
+    
+    return result;
   }
 
   async getMatchPredictions(matchId: string) {

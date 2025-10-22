@@ -35,6 +35,21 @@ function MatchCardInner({ match }: MatchCardProps) {
   const kickoffTime = new Date(match.kickoffAt);
   const isLocked = new Date() >= kickoffTime;
   const hasScore = match.scoreHome != null && match.scoreAway != null;
+  
+  // Debug: показываем данные для live матчей
+  const status = getMatchStatus(match);
+  const isLive = isMatchActive(match);
+  
+  if (isLive) {
+    console.log('🔴 LIVE MATCH DATA:', {
+      teams: `${match.homeTeam} vs ${match.awayTeam}`,
+      status: match.status,
+      scoreHome: match.scoreHome,
+      scoreAway: match.scoreAway,
+      hasScore,
+      statusInfo: status
+    });
+  }
 
   // Track previous score to highlight changes
   const prevScoreRef = useRef<{ h?: number; a?: number } | null>(null);
@@ -64,9 +79,6 @@ function MatchCardInner({ match }: MatchCardProps) {
       setPredAway(match.userPrediction!.predAway);
     }
   }, [match.userPrediction, initialHasPrediction, isEditing, hasLocalPrediction]);
-  
-  const status = getMatchStatus(match);
-  const isLive = isMatchActive(match);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ru-RU', {
