@@ -69,10 +69,9 @@ export function registerAdminRoutes(app: Express, prisma: PrismaClient, logger: 
         return res.json(result);
       }
       
-      // Если force=true, очищаем кэш перед синхронизацией
+      // Force parameter is now always respected (no cache on syncMatchesFromAPI)
       if (force) {
-        logger.info({ season, force }, 'Force sync requested, invalidating cache');
-        cachedDataService.cache.invalidate(`api_sync_${season}`);
+        logger.info({ season, force }, 'Force sync requested');
       }
       
       const result = await cachedDataService.syncMatchesFromAPI(season);

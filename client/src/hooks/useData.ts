@@ -223,6 +223,53 @@ export function useUserPredictions(userId?: string) {
   };
 }
 
+// Custom hook for top scorers data with auto-refresh
+export function useTopScorers(autoRefresh: boolean = false) {
+  const [scorers, setScorers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchScorers = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await api.getTopScorers();
+      setScorers(data.scorers || []);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch top scorers';
+      setError(errorMessage);
+      console.error('Failed to fetch top scorers:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Use polling hook for automatic updates (disabled by default since scorers change slowly)
+  const { isPolling, lastUpdate, manualPoll } = useDataPolling(
+    fetchScorers,
+    300000, // 5 minutes (scorers don't change frequently)
+    autoRefresh
+  );
+
+  // Initial fetch
+  useEffect(() => {
+    fetchScorers();
+  }, [fetchScorers]);
+
+  const refresh = useCallback(() => {
+    setLoading(true);
+    return manualPoll();
+  }, [manualPoll]);
+
+  return {
+    scorers,
+    loading,
+    error,
+    refresh,
+    isPolling,
+    lastUpdate
+  };
+}
+
 // Hook for cache statistics (admin only)
 export function useCacheStats(enabled: boolean = false) {
   const [stats, setStats] = useState<any>({});

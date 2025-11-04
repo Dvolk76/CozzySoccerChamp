@@ -1,13 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MatchCard } from '../components/MatchCard';
-import { useMatches } from '../hooks/useData';
+import { TopScorerItem } from '../components/TopScorerItem';
+import { useMatches, useTopScorers } from '../hooks/useData';
 import { LastSync } from '../components/LastSync';
 import type { Match } from '../types';
 import { useMatchesUiState } from '../hooks/useMatchesUiState';
 
 export function MatchesView() {
   const { matches, loading, error, refresh, isPolling, lastUpdate } = useMatches(true);
+  const { scorers, loading: loadingScorers, error: errorScorers } = useTopScorers(false);
   const { collapsedGroups, collapsedDays, initializedDays, setCollapsedGroups, setCollapsedDays, setInitializedDays, toggleGroup, toggleDay } = useMatchesUiState();
+  const [viewMode, setViewMode] = useState<'scorers' | 'matches'>('matches');
 
   const translateStage = (stage: string) => {
     const stageTranslations: Record<string, string> = {
@@ -229,7 +232,63 @@ export function MatchesView() {
   return (
     <div>
       <LastSync lastUpdate={lastUpdate} isLoading={isPolling} />
-      {Object.entries(groupedMatches).map(([groupName, dayGroups]) => {
+      
+      {/* View mode switcher */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '16px',
+        borderBottom: '1px solid var(--tg-theme-hint-color, #999)',
+        paddingBottom: '8px'
+      }}>
+        <button
+          onClick={() => setViewMode('matches')}
+          style={{
+            flex: 1,
+            padding: '12px',
+            backgroundColor: viewMode === 'matches' 
+              ? 'var(--tg-theme-button-color, #3390ec)' 
+              : 'var(--tg-theme-secondary-bg-color, #f0f0f0)',
+            color: viewMode === 'matches' 
+              ? 'var(--tg-theme-button-text-color, #fff)' 
+              : 'var(--tg-theme-text-color, #000)',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          📅 Матчи
+        </button>
+        <button
+          onClick={() => setViewMode('scorers')}
+          style={{
+            flex: 1,
+            padding: '12px',
+            backgroundColor: viewMode === 'scorers' 
+              ? 'var(--tg-theme-button-color, #3390ec)' 
+              : 'var(--tg-theme-secondary-bg-color, #f0f0f0)',
+            color: viewMode === 'scorers' 
+              ? 'var(--tg-theme-button-text-color, #fff)' 
+              : 'var(--tg-theme-text-color, #000)',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          ⚽ Бомбардиры
+        </button>
+      </div>
+
+      {/* Matches View */}
+      {viewMode === 'matches' && (
+        <div>
+          {Object.entries(groupedMatches).map(([groupName, dayGroups]) => {
         const isGroupCollapsed = collapsedGroups.has(groupName);
         
         return (
@@ -280,6 +339,44 @@ export function MatchesView() {
           </div>
         );
       })}
+        </div>
+      )}
+
+      {/* Top Scorers View */}
+      {viewMode === 'scorers' && (
+        <div>
+          {loadingScorers ? (
+            <div className="loading">Загрузка бомбардиров...</div>
+          ) : errorScorers ? (
+            <div className="error">
+              {errorScorers}
+              <button onClick={refresh} style={{ marginLeft: '8px' }}>
+                Повторить
+              </button>
+            </div>
+          ) : scorers.length === 0 ? (
+            <div className="loading">
+              Нет данных о бомбардирах. Синхронизируйте данные в разделе Админ.
+            </div>
+          ) : (
+            <div>
+              <div style={{
+                marginBottom: '12px',
+                padding: '12px',
+                backgroundColor: 'var(--tg-theme-secondary-bg-color, #f0f0f0)',
+                borderRadius: '8px',
+                fontSize: '13px',
+                color: 'var(--tg-theme-hint-color, #999)'
+              }}>
+                Топ-10 бомбардиров Лиги Чемпионов
+              </div>
+              {scorers.map((scorer) => (
+                <TopScorerItem key={scorer.rank} scorer={scorer} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

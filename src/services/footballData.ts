@@ -70,6 +70,11 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
     const now = new Date();
     const matchTime = new Date(m.utcDate);
     const hoursFromKickoff = Math.max(0, (now.getTime() - matchTime.getTime()) / (1000 * 60 * 60));
+
+    // Если время начала уже наступило, но API оставил статус TIMED/SCHEDULED — считаем матч начатым
+    if ((status === 'TIMED' || status === 'SCHEDULED') && now >= matchTime) {
+      status = 'IN_PLAY';
+    }
     
     // Если матч был более 4 часов назад и есть счет, принудительно устанавливаем статус FINISHED
     if (hoursFromKickoff >= 4 && (scoreHome != null || scoreAway != null)) {
@@ -116,6 +121,40 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
   console.log('[syncChampionsLeague] Successfully synced', tasks.length, 'matches');
   
   return { count: tasks.length };
+}
+
+export async function getTopScorers(season: number, env?: any) {
+  const token = env?.FOOTBALL_API_TOKEN || env?.FOOTBALL_DATA_API_TOKEN || process.env.FOOTBALL_API_TOKEN || process.env.FOOTBALL_DATA_API_TOKEN;
+  if (!token) {
+    console.error('[getTopScorers] No API token found');
+    throw new Error('FOOTBALL_API_TOKEN or FOOTBALL_DATA_API_TOKEN required');
+  }
+
+  const url = `${BASE_URL}/competitions/CL/scorers?season=${season}&limit=10`;
+  console.log('[getTopScorers] Fetching from:', url);
+  
+  const res = await fetch(url, { headers: { 'X-Auth-Token': token } });
+  console.log('[getTopScorers] API response:', res.status, res.statusText);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('[getTopScorers] API error:', res.status, errorText);
+    throw new Error(`football-data error ${res.status}: ${errorText}`);
+  }
+  
+  const data = await res.json() as any;
+  console.log('[getTopScorers] Received scorers:', data.scorers?.length || 0);
+
+  return {
+    scorers: (data.scorers ?? []).map((scorer: any, index: number) => ({
+      rank: index + 1,
+      playerName: scorer.player?.name ?? 'Unknown',
+      teamName: scorer.team?.name ?? 'Unknown',
+      goals: scorer.goals ?? 0,
+      assists: scorer.assists ?? 0,
+      playedMatches: scorer.playedMatches ?? 0,
+    }))
+  };
 }
 
 

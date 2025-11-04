@@ -584,10 +584,9 @@ export async function adminHandler(
         });
       }
       
-      // Если force=true, очищаем кэш перед синхронизацией
+      // Force parameter is now always respected (no cache on syncMatchesFromAPI)
       if (force) {
-        logger.info({ season, force }, 'Force sync requested, invalidating cache');
-        cachedDataService.cache.invalidate(`api_sync_${season}`);
+        logger.info({ season, force }, 'Force sync requested');
       }
       
       const result = await cachedDataService.syncMatchesFromAPI(season);
@@ -1417,6 +1416,57 @@ export async function backupHandler(
 
   } catch (error) {
     logger.error({ error }, 'Backup handler error');
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// Scorers handler - получение топ-10 бомбардиров из Football Data API
+export async function scorersHandler(
+  request: Request, 
+  env: any, 
+  logger: Logger
+): Promise<Response> {
+  const url = new URL(request.url);
+  const path = url.pathname;
+  
+  try {
+    // GET /api/scorers
+    if (request.method === 'GET' && path === '/api/scorers') {
+      const season = parseInt(url.searchParams.get('season') || String(new Date().getFullYear()));
+      
+      try {
+        const { getTopScorers } = await import('../services/footballData.js');
+        const scorers = await getTopScorers(season, env);
+        
+        return new Response(JSON.stringify(scorers), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (error: any) {
+        logger.error({ error }, 'Failed to get scorers');
+        return new Response(JSON.stringify({ 
+          error: 'Failed to get scorers',
+          details: error.message
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    return new Response(JSON.stringify({
+      error: 'Scorers endpoint not found',
+      path,
+      method: request.method
+    }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    logger.error({ error }, 'Scorers handler error');
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

@@ -301,36 +301,27 @@ export class CachedDataService {
   }
 
   /**
-   * Sync matches from external API with rate limiting protection
+   * Sync matches from external API (no cache - always fetches fresh data)
    */
   async syncMatchesFromAPI(season?: number) {
     const currentSeason = season || 2025; // Current Champions League season 2025-26
-    const cacheKey = `api_sync_${currentSeason}`;
     
     this.logger.info({ season: currentSeason }, '[CachedDataService] Starting syncMatchesFromAPI');
     
-    return this.cache.get(
-      cacheKey,
-      async () => {
-        this.logger.info({ season: currentSeason }, '[CachedDataService] Syncing matches from external API');
-        
-        try {
-          const result = await syncChampionsLeague(this.prisma, currentSeason, this.env);
-          this.logger.info({ count: result.count }, '[CachedDataService] Sync completed successfully');
-          
-          // Invalidate matches cache after API sync
-          this.cache.invalidate('matches');
-          this.cache.invalidate('leaderboard');
-          this.logger.info('[CachedDataService] Invalidated matches and leaderboard cache');
-          
-          return result;
-        } catch (error: any) {
-          this.logger.error({ error: error?.message || error, season: currentSeason }, '[CachedDataService] Failed to sync from API');
-          throw error;
-        }
-      },
-      60000 // 1 minute TTL - respects API rate limit
-    );
+    try {
+      const result = await syncChampionsLeague(this.prisma, currentSeason, this.env);
+      this.logger.info({ count: result.count }, '[CachedDataService] Sync completed successfully');
+      
+      // Invalidate matches cache after API sync
+      this.cache.invalidate('matches');
+      this.cache.invalidate('leaderboard');
+      this.logger.info('[CachedDataService] Invalidated matches and leaderboard cache');
+      
+      return result;
+    } catch (error: any) {
+      this.logger.error({ error: error?.message || error, season: currentSeason }, '[CachedDataService] Failed to sync from API');
+      throw error;
+    }
   }
 
   /**

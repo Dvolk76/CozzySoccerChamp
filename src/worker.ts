@@ -328,7 +328,8 @@ async function handleApiRoute(
     predictionsHandler,
     leaderboardHandler,
     adminHandler,
-    recalcHandler
+    recalcHandler,
+    scorersHandler
   } = await import('./routes/worker-adapters.js');
 
   try {
@@ -345,6 +346,8 @@ async function handleApiRoute(
       response = await predictionsHandler(request, env, logger, cachedDataService, user, prisma);
     } else if (path.startsWith('/api/leaderboard')) {
       response = await leaderboardHandler(request, env, logger, cachedDataService, user, prisma);
+    } else if (path.startsWith('/api/scorers')) {
+      response = await scorersHandler(request, env, logger);
     } else if (path.startsWith('/api/admin')) {
       response = await adminHandler(request, env, logger, cachedDataService, user, prisma);
     } else if (path.startsWith('/api/recalc')) {

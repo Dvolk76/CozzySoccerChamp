@@ -155,6 +155,12 @@ class ApiClient {
     return this.get<{ rounds: any[] }>('/api/leaderboard/by-rounds');
   }
 
+  // Top Scorers
+  async getTopScorers(season?: number) {
+    const seasonParam = season || new Date().getFullYear();
+    return this.get<{ scorers: any[] }>(`/api/scorers?season=${seasonParam}`);
+  }
+
   // Admin
   async syncMatches(season?: number, force: boolean = true) {
     console.log('📤 Sending sync request:', { season: season || new Date().getFullYear(), force });

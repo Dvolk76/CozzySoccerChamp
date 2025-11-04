@@ -110,3 +110,16 @@ export interface PredictionHistoryResponse {
   } | null;
   totalChanges: number;
 }
+
+export interface TopScorer {
+  rank: number;
+  playerName: string;
+  teamName: string;
+  goals: number;
+  assists: number;
+  playedMatches: number;
+}
+
+export interface TopScorersResponse {
+  scorers: TopScorer[];
+}
