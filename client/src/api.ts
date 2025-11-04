@@ -157,10 +157,13 @@ class ApiClient {
 
   // Admin
   async syncMatches(season?: number, force: boolean = true) {
-    return this.post<{ count: number }>('/api/admin/sync', { 
+    console.log('📤 Sending sync request:', { season: season || new Date().getFullYear(), force });
+    const result = await this.post<{ count: number }>('/api/admin/sync', { 
       season: season || new Date().getFullYear(),
       force: force  // Принудительная синхронизация игнорируя кэш
     });
+    console.log('📥 Sync result received:', result);
+    return result;
   }
 
   async recalcAll() {
