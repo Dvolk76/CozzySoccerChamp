@@ -4,6 +4,7 @@ import type { Match } from '../types';
 import { getMatchStatus, isMatchActive } from '../utils/matchStatus';
 import { PredictionHistoryModal } from './PredictionHistoryModal';
 import { haptic } from '../utils/haptic';
+import { BetsModal } from './BetsModal';
 
 interface MatchCardProps {
   match: Match;
@@ -23,11 +24,8 @@ function MatchCardInner({ match }: MatchCardProps) {
   const [awayFocused, setAwayFocused] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Bets toggle state
-  const [showBets, setShowBets] = useState(false);
-  const [betsLoading, setBetsLoading] = useState(false);
-  const [betsError, setBetsError] = useState<string | null>(null);
-  const [bets, setBets] = useState<Array<{ userId: string; name: string; tg_user_id?: string; predHome: number; predAway: number; points: number; createdAt: string }>>([]);
+  // Bets modal state
+  const [betsModalOpen, setBetsModalOpen] = useState(false);
 
   // History modal state
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
@@ -205,24 +203,15 @@ function MatchCardInner({ match }: MatchCardProps) {
     }
   };
 
-  const toggleBets = async () => {
-    // Only available after kickoff
+  const openBetsModal = () => {
     if (!isLocked) return;
     haptic.light();
-    const next = !showBets;
-    setShowBets(next);
-    if (next && !betsLoading) {
-      setBetsError(null);
-      setBetsLoading(true);
-      try {
-        const data = await api.getMatchPredictions(match.id);
-        setBets(data.predictions || []);
-      } catch (err) {
-        setBetsError(err instanceof Error ? err.message : 'Не удалось загрузить ставки');
-      } finally {
-        setBetsLoading(false);
-      }
-    }
+    setBetsModalOpen(true);
+  };
+
+  const closeBetsModal = () => {
+    haptic.light();
+    setBetsModalOpen(false);
   };
 
   const handlePredictionClick = (userId: string) => {
@@ -381,60 +370,15 @@ function MatchCardInner({ match }: MatchCardProps) {
               </div>
               <div className="prediction-actions">
                 <button
-                  className={`locked-prediction-button ${showBets ? 'active' : ''}`}
-                  onClick={toggleBets}
+                  className="locked-prediction-button"
+                  onClick={openBetsModal}
                 >
-                  {betsLoading ? 'Загрузка…' : showBets ? 'Скрыть ставки ▴' : (
-                    <>
-                      Ставки игроков ▾
-                      {isLive && <span className="live-indicator"></span>}
-                    </>
-                  )}
+                  <>
+                    Ставки игроков ▾
+                    {isLive && <span className="live-indicator"></span>}
+                  </>
                 </button>
               </div>
-              {showBets && (
-                <div className="bets-section">
-                  {betsError && (
-                    <div className="error-message small">
-                      {betsError}
-                    </div>
-                  )}
-                  {!betsError && (
-                    <div className="bets-table-wrapper">
-                      <table className="bets-table">
-                        <thead>
-                          <tr>
-                            <th>Ник</th>
-                            <th>Прогноз</th>
-                            <th>Очки {isLive ? '(лайв)' : ''}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {bets.length === 0 ? (
-                            <tr>
-                              <td colSpan={3} className="empty-cell">Пока нет ставок</td>
-                            </tr>
-                          ) : (
-                            bets.map((b) => (
-                              <tr 
-                                key={b.userId} 
-                                className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}
-                                onClick={() => handlePredictionClick(b.userId)}
-                                style={{ cursor: 'pointer' }}
-                                title="Нажмите, чтобы увидеть историю изменений"
-                              >
-                                <td className="nick">{b.name}</td>
-                                <td className="pred">{b.predHome}:{b.predAway}</td>
-                                <td className="points">{b.points}</td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           ) : (
             <div className="prediction-form-locked">
@@ -455,60 +399,15 @@ function MatchCardInner({ match }: MatchCardProps) {
               </div>
               <div className="prediction-actions">
                 <button
-                  className={`locked-prediction-button ${showBets ? 'active' : ''}`}
-                  onClick={toggleBets}
+                  className="locked-prediction-button"
+                  onClick={openBetsModal}
                 >
-                  {betsLoading ? 'Загрузка…' : showBets ? 'Скрыть ставки ▴' : (
-                    <>
-                      Ставки игроков ▾
-                      {isLive && <span className="live-indicator"></span>}
-                    </>
-                  )}
+                  <>
+                    Ставки игроков ▾
+                    {isLive && <span className="live-indicator"></span>}
+                  </>
                 </button>
               </div>
-              {showBets && (
-                <div className="bets-section">
-                  {betsError && (
-                    <div className="error-message small">
-                      {betsError}
-                    </div>
-                  )}
-                  {!betsError && (
-                    <div className="bets-table-wrapper">
-                      <table className="bets-table">
-                        <thead>
-                          <tr>
-                            <th>Ник</th>
-                            <th>Прогноз</th>
-                            <th>Очки {isLive ? '(лайв)' : ''}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {bets.length === 0 ? (
-                            <tr>
-                              <td colSpan={3} className="empty-cell">Пока нет ставок</td>
-                            </tr>
-                          ) : (
-                            bets.map((b) => (
-                              <tr 
-                                key={b.userId} 
-                                className={`bet-row ${b.userId === (window as any)?.currentUserId ? 'me' : ''}`}
-                                onClick={() => handlePredictionClick(b.userId)}
-                                style={{ cursor: 'pointer' }}
-                                title="Нажмите, чтобы увидеть историю изменений"
-                              >
-                                <td className="nick">{b.name}</td>
-                                <td className="pred">{b.predHome}:{b.predAway}</td>
-                                <td className="points">{b.points}</td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -526,6 +425,16 @@ function MatchCardInner({ match }: MatchCardProps) {
           userId={selectedUserId}
           matchId={match.id}
           onClose={closeHistoryModal}
+        />
+      )}
+
+      {betsModalOpen && (
+        <BetsModal
+          matchId={match.id}
+          isOpen={betsModalOpen}
+          onClose={closeBetsModal}
+          onPredictionClick={handlePredictionClick}
+          isLive={isLive}
         />
       )}
     </div>
