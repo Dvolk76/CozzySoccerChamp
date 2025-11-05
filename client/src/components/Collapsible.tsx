@@ -68,30 +68,42 @@ export function Collapsible({ isOpen, durationMs = 180, children }: CollapsibleP
     const container = containerRef.current;
     if (!content || !container) return;
     
+    let resizeTimeout: NodeJS.Timeout | null = null;
+    let lastKnownHeight = content.scrollHeight;
+    
     const observer = new ResizeObserver((entries) => {
-      if (!isTransitioning && height === 'auto') {
-        // Content size changed - force smooth height recalculation
-        const newHeight = `${content.scrollHeight}px`;
-        requestAnimationFrame(() => {
-          if (containerRef.current && contentRef.current) {
-            // Briefly set pixel height then back to auto for smooth expansion
-            setHeight(newHeight);
-            requestAnimationFrame(() => {
-              setHeight('auto');
-            });
-          }
-        });
+      if (isTransitioning || height !== 'auto') return;
+      
+      // Debounce rapid changes to prevent jank
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
       }
+      
+      resizeTimeout = setTimeout(() => {
+        if (!contentRef.current) return;
+        
+        const currentHeight = contentRef.current.scrollHeight;
+        // Only update if height changed significantly (more than 10px)
+        if (Math.abs(currentHeight - lastKnownHeight) > 10) {
+          lastKnownHeight = currentHeight;
+          // Height is already auto, just let it expand naturally
+          // Force a reflow to ensure smooth expansion
+          if (containerRef.current) {
+            containerRef.current.style.height = 'auto';
+          }
+        }
+      }, 50); // 50ms debounce
     });
     
-    // Observe the content wrapper
+    // Only observe the main content wrapper
     observer.observe(content);
     
-    // Also observe key nested elements that might change (like bets-section)
-    const nestedCollapsibles = content.querySelectorAll('.bets-section, .match-card, .bets-table-wrapper');
-    nestedCollapsibles.forEach(element => observer.observe(element));
-    
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+    };
   }, [isOpen, height, isTransitioning]);
 
   return (
