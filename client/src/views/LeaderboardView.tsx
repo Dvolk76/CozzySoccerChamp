@@ -3,6 +3,7 @@ import { LeaderboardItem } from '../components/LeaderboardItem';
 import { useLeaderboard, useLeaderboardByRounds } from '../hooks/useData';
 import { LastSync } from '../components/LastSync';
 import type { LeaderboardItem as LeaderboardItemType } from '../types';
+import { haptic } from '../utils/haptic';
 
 export function LeaderboardView() {
   try {
@@ -42,7 +43,10 @@ export function LeaderboardView() {
       return (
         <div className="error">
           {error}
-          <button onClick={refresh} style={{ marginLeft: '8px' }}>
+          <button onClick={() => {
+            haptic.light();
+            refresh();
+          }} style={{ marginLeft: '8px' }}>
             Повторить
           </button>
         </div>
@@ -72,7 +76,10 @@ export function LeaderboardView() {
           paddingBottom: '8px'
         }}>
           <button
-            onClick={() => setViewMode('overall')}
+            onClick={() => {
+              haptic.selection();
+              setViewMode('overall');
+            }}
             style={{
               flex: 1,
               padding: '12px',
@@ -93,7 +100,10 @@ export function LeaderboardView() {
             Общий зачет
           </button>
           <button
-            onClick={() => setViewMode('rounds')}
+            onClick={() => {
+              haptic.selection();
+              setViewMode('rounds');
+            }}
             style={{
               flex: 1,
               padding: '12px',
@@ -144,7 +154,10 @@ export function LeaderboardView() {
                   {sortedRounds.map(round => (
                     <button
                       key={round.round}
-                      onClick={() => setSelectedRound(round.round)}
+                      onClick={() => {
+                        haptic.selection();
+                        setSelectedRound(round.round);
+                      }}
                       style={{
                         padding: '8px 16px',
                         backgroundColor: selectedRound === round.round 

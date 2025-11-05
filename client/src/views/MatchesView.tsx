@@ -5,6 +5,7 @@ import { useMatches, useTopScorers } from '../hooks/useData';
 import { LastSync } from '../components/LastSync';
 import type { Match } from '../types';
 import { useMatchesUiState } from '../hooks/useMatchesUiState';
+import { haptic } from '../utils/haptic';
 
 export function MatchesView() {
   const { matches, loading, error, refresh, isPolling, lastUpdate } = useMatches(true);
@@ -242,7 +243,10 @@ export function MatchesView() {
         paddingBottom: '8px'
       }}>
         <button
-          onClick={() => setViewMode('matches')}
+          onClick={() => {
+            haptic.selection();
+            setViewMode('matches');
+          }}
           style={{
             flex: 1,
             padding: '12px',
@@ -263,7 +267,10 @@ export function MatchesView() {
           📅 Матчи
         </button>
         <button
-          onClick={() => setViewMode('scorers')}
+          onClick={() => {
+            haptic.selection();
+            setViewMode('scorers');
+          }}
           style={{
             flex: 1,
             padding: '12px',
@@ -295,7 +302,10 @@ export function MatchesView() {
           <div key={groupName} className="match-group">
             <div 
               className="match-group-header"
-              onClick={() => toggleGroup(groupName)}
+              onClick={() => {
+                haptic.selection();
+                toggleGroup(groupName);
+              }}
             >
               <span>{groupName}</span>
               <span className={`collapse-icon ${isGroupCollapsed ? 'collapsed' : ''}`}>
@@ -314,7 +324,10 @@ export function MatchesView() {
                   <div key={date}>
                     <div 
                       className="match-day-header"
-                      onClick={() => toggleDay(dayKey)}
+                      onClick={() => {
+                        haptic.selection();
+                        toggleDay(dayKey);
+                      }}
                     >
                       <span>{date}</span>
                       <span className={`collapse-icon ${isDayCollapsed ? 'collapsed' : ''}`}>

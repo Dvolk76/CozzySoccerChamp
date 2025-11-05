@@ -3,6 +3,7 @@ import { api } from '../api';
 import type { Match } from '../types';
 import { getMatchStatus, isMatchActive } from '../utils/matchStatus';
 import { PredictionHistoryModal } from './PredictionHistoryModal';
+import { haptic } from '../utils/haptic';
 
 interface MatchCardProps {
   match: Match;
@@ -116,6 +117,7 @@ function MatchCardInner({ match }: MatchCardProps) {
   const handleSubmit = async () => {
     if (isLocked) return;
     
+    haptic.medium();
     setSubmitting(true);
     setError(null);
     
@@ -124,8 +126,10 @@ function MatchCardInner({ match }: MatchCardProps) {
       setHasLocalPrediction(true);
       setSuccess(true);
       setIsEditing(false);
+      haptic.success();
       setTimeout(() => setSuccess(false), 1500);
     } catch (err) {
+      haptic.error();
       setError(err instanceof Error ? err.message : 'Ошибка отправки прогноза');
     } finally {
       setSubmitting(false);
@@ -133,10 +137,12 @@ function MatchCardInner({ match }: MatchCardProps) {
   };
 
   const handleEdit = () => {
+    haptic.light();
     setIsEditing(true);
   };
 
   const handleCancel = () => {
+    haptic.light();
     // Восстанавливаем оригинальные значения
     if (hasExistingPrediction) {
       setPredHome(match.userPrediction!.predHome);
@@ -173,24 +179,28 @@ function MatchCardInner({ match }: MatchCardProps) {
 
   const handleHomeIncrement = () => {
     if (!isLocked && (hasExistingPrediction ? isEditing : true)) {
+      haptic.soft();
       setPredHome(Math.min(9, predHome + 1));
     }
   };
 
   const handleHomeDecrement = () => {
     if (!isLocked && (hasExistingPrediction ? isEditing : true)) {
+      haptic.soft();
       setPredHome(Math.max(0, predHome - 1));
     }
   };
 
   const handleAwayIncrement = () => {
     if (!isLocked && (hasExistingPrediction ? isEditing : true)) {
+      haptic.soft();
       setPredAway(Math.min(9, predAway + 1));
     }
   };
 
   const handleAwayDecrement = () => {
     if (!isLocked && (hasExistingPrediction ? isEditing : true)) {
+      haptic.soft();
       setPredAway(Math.max(0, predAway - 1));
     }
   };
@@ -198,6 +208,7 @@ function MatchCardInner({ match }: MatchCardProps) {
   const toggleBets = async () => {
     // Only available after kickoff
     if (!isLocked) return;
+    haptic.light();
     const next = !showBets;
     setShowBets(next);
     if (next && !betsLoading) {
@@ -215,11 +226,13 @@ function MatchCardInner({ match }: MatchCardProps) {
   };
 
   const handlePredictionClick = (userId: string) => {
+    haptic.light();
     setSelectedUserId(userId);
     setHistoryModalOpen(true);
   };
 
   const closeHistoryModal = () => {
+    haptic.light();
     setHistoryModalOpen(false);
     setSelectedUserId(null);
   };

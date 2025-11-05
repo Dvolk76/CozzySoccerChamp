@@ -3,6 +3,7 @@ import WebApp from '@twa-dev/sdk';
 import { api } from '../api';
 import { useUser } from '../hooks/useUser';
 import type { User, Match, Prediction } from '../types';
+import { haptic } from '../utils/haptic';
 
 interface UserPredictionData {
   user: User;
@@ -112,7 +113,10 @@ export function UserPredictionsView({ userId, onBack }: UserPredictionsViewProps
     return (
       <div>
         <div className="header">
-          <button onClick={onBack} className="back-button">← Назад</button>
+          <button onClick={() => {
+            haptic.light();
+            onBack();
+          }} className="back-button">← Назад</button>
           Загрузка прогнозов...
         </div>
       </div>
@@ -123,7 +127,10 @@ export function UserPredictionsView({ userId, onBack }: UserPredictionsViewProps
     return (
       <div>
         <div className="header">
-          <button onClick={onBack} className="back-button">← Назад</button>
+          <button onClick={() => {
+            haptic.light();
+            onBack();
+          }} className="back-button">← Назад</button>
           Пользователь не найден
         </div>
       </div>
@@ -133,7 +140,10 @@ export function UserPredictionsView({ userId, onBack }: UserPredictionsViewProps
   return (
     <div>
       <div className="header">
-        <button onClick={onBack} className="back-button">← Назад</button>
+        <button onClick={() => {
+          haptic.light();
+          onBack();
+        }} className="back-button">← Назад</button>
         📝 Прогнозы игрока: {data.user.name}
       </div>
 

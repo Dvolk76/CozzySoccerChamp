@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useMatchesUiState } from '../hooks/useMatchesUiState';
 import type { Match } from '../types';
+import { haptic } from '../utils/haptic';
 
 interface AdminMatchesManagementViewProps {
   onBack: () => void;
@@ -186,7 +187,10 @@ export function AdminMatchesManagementView({ onBack }: AdminMatchesManagementVie
     return (
       <div>
         <div className="header">
-          <button onClick={onBack} className="back-button">← Назад</button>
+          <button onClick={() => {
+            haptic.light();
+            onBack();
+          }} className="back-button">← Назад</button>
           Загрузка матчей...
         </div>
       </div>
@@ -197,12 +201,18 @@ export function AdminMatchesManagementView({ onBack }: AdminMatchesManagementVie
     return (
       <div>
         <div className="header">
-          <button onClick={onBack} className="back-button">← Назад</button>
+          <button onClick={() => {
+            haptic.light();
+            onBack();
+          }} className="back-button">← Назад</button>
           Ошибка
         </div>
         <div className="error">
           {error}
-          <button onClick={loadMatches} style={{ marginLeft: '8px' }}>
+          <button onClick={() => {
+            haptic.light();
+            loadMatches();
+          }} style={{ marginLeft: '8px' }}>
             Повторить
           </button>
         </div>
@@ -252,7 +262,10 @@ export function AdminMatchesManagementView({ onBack }: AdminMatchesManagementVie
   return (
     <div>
       <div className="header">
-        <button onClick={onBack} className="back-button">← Назад</button>
+        <button onClick={() => {
+          haptic.light();
+          onBack();
+        }} className="back-button">← Назад</button>
         ⚽ Управление матчами
       </div>
       
@@ -263,7 +276,10 @@ export function AdminMatchesManagementView({ onBack }: AdminMatchesManagementVie
           <div key={groupName} className="match-group">
             <div 
               className="match-group-header"
-              onClick={() => toggleGroup(groupName)}
+              onClick={() => {
+                haptic.selection();
+                toggleGroup(groupName);
+              }}
             >
               <span>{groupName}</span>
               <span className={`collapse-icon ${isGroupCollapsed ? 'collapsed' : ''}`}>
@@ -282,7 +298,10 @@ export function AdminMatchesManagementView({ onBack }: AdminMatchesManagementVie
                   <div key={date}>
                     <div 
                       className="match-day-header"
-                      onClick={() => toggleDay(dayKey)}
+                      onClick={() => {
+                        haptic.selection();
+                        toggleDay(dayKey);
+                      }}
                     >
                       <span>{date}</span>
                       <span className={`collapse-icon ${isDayCollapsed ? 'collapsed' : ''}`}>
@@ -444,10 +463,12 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
 
   // Score editing functions
   const handleScoreSubmit = async () => {
+    haptic.warning();
     if (!confirm('Изменить счет матча? Это повлияет на очки всех игроков.')) {
       return;
     }
 
+    haptic.heavy();
     setScoreSubmitting(true);
     setScoreError(null);
     
@@ -461,11 +482,13 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
         console.warn('Failed to recalc scores:', recalcErr);
       }
       
+      haptic.success();
       setScoreSuccess(true);
       setIsEditingScore(false);
       setTimeout(() => setScoreSuccess(false), 1500);
       onUpdate(); // Обновляем данные
     } catch (err) {
+      haptic.error();
       setScoreError(err instanceof Error ? err.message : 'Ошибка обновления счета');
     } finally {
       setScoreSubmitting(false);
@@ -473,12 +496,14 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
   };
 
   const handleScoreEdit = () => {
+    haptic.light();
     setIsEditingScore(true);
     setScoreHome(match.scoreHome || 0);
     setScoreAway(match.scoreAway || 0);
   };
 
   const handleScoreCancel = () => {
+    haptic.light();
     setScoreHome(match.scoreHome || 0);
     setScoreAway(match.scoreAway || 0);
     setIsEditingScore(false);
@@ -508,18 +533,22 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
   };
 
   const handleScoreHomeIncrement = () => {
+    haptic.soft();
     setScoreHome(Math.min(9, scoreHome + 1));
   };
 
   const handleScoreHomeDecrement = () => {
+    haptic.soft();
     setScoreHome(Math.max(0, scoreHome - 1));
   };
 
   const handleScoreAwayIncrement = () => {
+    haptic.soft();
     setScoreAway(Math.min(9, scoreAway + 1));
   };
 
   const handleScoreAwayDecrement = () => {
+    haptic.soft();
     setScoreAway(Math.max(0, scoreAway - 1));
   };
 

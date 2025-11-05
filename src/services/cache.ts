@@ -179,9 +179,27 @@ export class CachedDataService {
   ) {}
 
   /**
-   * Get cached matches with 1-minute TTL
+   * Get cached matches with dynamic TTL based on live match status
+   * - 10 seconds if there are live matches
+   * - 60 seconds otherwise
    */
   async getMatches() {
+    // Check if there are any live matches to determine TTL
+    const liveMatchCount = await this.prisma.match.count({
+      where: {
+        status: {
+          in: ['IN_PLAY', 'LIVE', 'PAUSED']
+        }
+      }
+    });
+    
+    // Use shorter TTL when matches are live
+    const ttl = liveMatchCount > 0 ? 10000 : 60000; // 10s for live, 60s otherwise
+    
+    if (liveMatchCount > 0) {
+      this.logger.info({ liveMatchCount, ttl }, 'Live matches detected, using short TTL');
+    }
+    
     return this.cache.get(
       'matches',
       async () => {
@@ -190,7 +208,7 @@ export class CachedDataService {
           orderBy: { kickoffAt: 'asc' } 
         });
       },
-      60000 // 1 minute TTL
+      ttl
     );
   }
 

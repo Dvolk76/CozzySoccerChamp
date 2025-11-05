@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import type { PredictionHistoryResponse } from '../types';
+import { haptic } from '../utils/haptic';
 
 interface PredictionHistoryModalProps {
   userId: string;
@@ -42,11 +43,17 @@ export function PredictionHistoryModal({ userId, matchId, onClose }: PredictionH
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={() => {
+      haptic.light();
+      onClose();
+    }}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">📜 История прогноза</h2>
-          <button onClick={onClose} className="modal-close">×</button>
+          <button onClick={() => {
+            haptic.light();
+            onClose();
+          }} className="modal-close">×</button>
         </div>
 
         <div className="modal-content">

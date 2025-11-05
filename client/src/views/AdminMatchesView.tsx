@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useMatchesUiState } from '../hooks/useMatchesUiState';
 import type { Match, Prediction, User } from '../types';
 import { getMatchStatus, canBetOnMatch, isMatchActive } from '../utils/matchStatus';
+import { haptic } from '../utils/haptic';
 
 interface AdminMatchesViewProps {
   userId: string;
@@ -288,7 +289,10 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
   return (
     <div>
       <div className="header">
-        <button onClick={onBack} className="back-button">← Назад</button>
+        <button onClick={() => {
+          haptic.light();
+          onBack();
+        }} className="back-button">← Назад</button>
         📝 Прогнозы: {data.user.name}
       </div>
 
@@ -324,9 +328,13 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
             disabled={savingPicks}
             onClick={async () => {
               if (!picks) return;
+              haptic.medium();
               setSavingPicks(true);
               try {
                 await api.setUserPicks(userId, picks.championPick ?? null, picks.topScorerPick ?? null);
+                haptic.success();
+              } catch (err) {
+                haptic.error();
               } finally {
                 setSavingPicks(false);
               }
@@ -344,7 +352,10 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
           <div key={groupName} className="match-group">
             <div 
               className="match-group-header"
-              onClick={() => toggleGroup(groupName)}
+              onClick={() => {
+                haptic.selection();
+                toggleGroup(groupName);
+              }}
             >
               <span>{groupName}</span>
               <span className={`collapse-icon ${isGroupCollapsed ? 'collapsed' : ''}`}>
@@ -363,7 +374,10 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
                   <div key={date}>
                     <div 
                       className="match-day-header"
-                      onClick={() => toggleDay(dayKey)}
+                      onClick={() => {
+                        haptic.selection();
+                        toggleDay(dayKey);
+                      }}
                     >
                       <span>{date}</span>
                       <span className={`collapse-icon ${isDayCollapsed ? 'collapsed' : ''}`}>
@@ -498,6 +512,7 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
   };
 
   const handleSubmit = async () => {
+    haptic.medium();
     setSubmitting(true);
     setError(null);
     
@@ -506,9 +521,11 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
       setHasLocalPrediction(true);
       setSuccess(true);
       setIsEditing(false);
+      haptic.success();
       setTimeout(() => setSuccess(false), 1500);
       onUpdate(); // Обновляем данные
     } catch (err) {
+      haptic.error();
       setError(err instanceof Error ? err.message : 'Ошибка отправки прогноза');
     } finally {
       setSubmitting(false);
@@ -516,8 +533,10 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
   };
 
   const handleDelete = async () => {
+    haptic.warning();
     if (!confirm('Удалить прогноз для этого матча?')) return;
     
+    haptic.heavy();
     setSubmitting(true);
     setError(null);
     
@@ -527,8 +546,10 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
       setPredHome(0);
       setPredAway(0);
       setIsEditing(false);
+      haptic.success();
       onUpdate(); // Обновляем данные
     } catch (err) {
+      haptic.error();
       setError(err instanceof Error ? err.message : 'Ошибка удаления прогноза');
     } finally {
       setSubmitting(false);
@@ -536,10 +557,12 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
   };
 
   const handleEdit = () => {
+    haptic.light();
     setIsEditing(true);
   };
 
   const handleCancel = () => {
+    haptic.light();
     // Восстанавливаем оригинальные значения
     if (hasExistingPrediction) {
       setPredHome(match.userPrediction!.predHome);
@@ -576,24 +599,28 @@ function AdminMatchCardInner({ match, userId, onUpdate }: AdminMatchCardProps) {
 
   const handleHomeIncrement = () => {
     if (hasExistingPrediction ? isEditing : true) {
+      haptic.soft();
       setPredHome(Math.min(9, predHome + 1));
     }
   };
 
   const handleHomeDecrement = () => {
     if (hasExistingPrediction ? isEditing : true) {
+      haptic.soft();
       setPredHome(Math.max(0, predHome - 1));
     }
   };
 
   const handleAwayIncrement = () => {
     if (hasExistingPrediction ? isEditing : true) {
+      haptic.soft();
       setPredAway(Math.min(9, predAway + 1));
     }
   };
 
   const handleAwayDecrement = () => {
     if (hasExistingPrediction ? isEditing : true) {
+      haptic.soft();
       setPredAway(Math.max(0, predAway - 1));
     }
   };

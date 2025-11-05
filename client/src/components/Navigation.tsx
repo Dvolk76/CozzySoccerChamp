@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { haptic } from '../utils/haptic';
 
 interface NavigationProps {
   currentView: string;
@@ -75,7 +76,10 @@ export function Navigation({ currentView, onNavigate }: NavigationProps) {
         <button
           key={item.id}
           className={`nav-button ${currentView === item.id ? 'active' : ''}`}
-          onClick={() => onNavigate(item.id)}
+          onClick={() => {
+            haptic.light();
+            onNavigate(item.id);
+          }}
         >
           <span>{item.icon}</span>
           <span>{item.label}</span>

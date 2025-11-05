@@ -4,6 +4,7 @@ import { useUser } from '../hooks/useUser';
 import { useCacheStats } from '../hooks/useData';
 import { LastSync } from '../components/LastSync';
 import type { User } from '../types';
+import { haptic } from '../utils/haptic';
 
 interface AdminViewProps {
   onEditUserPredictions?: (userId: string) => void;
@@ -29,6 +30,7 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
   const [awarding, setAwarding] = useState(false);
 
   const handleClaimAdmin = async () => {
+    haptic.light();
     // Сбор «секретных» нажатий: 10 раз за 10 секунд
     const now = Date.now();
     const recent = [...tapTimes, now].filter(t => now - t <= 10000);
@@ -46,26 +48,31 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
         return;
       }
 
+      haptic.success();
       setMessage('Вы стали администратором!');
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
+      haptic.error();
       setError(err instanceof Error ? err.message : 'Ошибка получения прав админа');
     }
   };
 
   const handleSync = async () => {
+    haptic.medium();
     setSyncing(true);
     setError(null);
     try {
       console.log('🔄 Starting manual sync...');
       const response = await api.syncMatches();
       console.log('✅ Sync response:', response);
+      haptic.success();
       setMessage(`Синхронизировано ${response.count} матчей`);
       setTimeout(() => setMessage(null), 5000);
       // Обновляем статистику после синхронизации
       window.location.reload();
     } catch (err) {
       console.error('❌ Sync error:', err);
+      haptic.error();
       setError(err instanceof Error ? err.message : 'Ошибка синхронизации');
     } finally {
       setSyncing(false);
@@ -73,13 +80,16 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
   };
 
   const handleRecalc = async () => {
+    haptic.medium();
     setRecalcing(true);
     setError(null);
     try {
       const response = await api.recalcAll();
+      haptic.success();
       setMessage(`Пересчитано очков по ${response.matches} матчам`);
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
+      haptic.error();
       setError(err instanceof Error ? err.message : 'Ошибка пересчёта');
     } finally {
       setRecalcing(false);
@@ -87,16 +97,20 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
+    haptic.warning();
     if (!confirm(`Удалить пользователя "${userName}"? Это действие необратимо.`)) return;
+    haptic.heavy();
     setDeletingUserId(userId);
     setError(null);
     try {
       await api.deleteUser(userId);
+      haptic.success();
       setMessage(`Пользователь "${userName}" успешно удален`);
       setTimeout(() => setMessage(null), 3000);
       // Обновляем список пользователей
       await loadUsers();
     } catch (err) {
+      haptic.error();
       setError(err instanceof Error ? err.message : 'Ошибка удаления пользователя');
     } finally {
       setDeletingUserId(null);
@@ -124,11 +138,14 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
   };
 
   const handleRefreshCache = async () => {
+    haptic.medium();
     try {
       await refreshCache();
+      haptic.success();
       setMessage('Кэш успешно обновлен');
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
+      haptic.error();
       setError(err instanceof Error ? err.message : 'Ошибка обновления кэша');
     }
   };
@@ -297,14 +314,18 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
                 </div>
                 <button
                   onClick={async () => {
+                    haptic.warning();
                     if (!confirm('Начислить бонусные очки по итогам турнира? Действие перезапишет предыдущие бонусы.')) return;
+                    haptic.medium();
                     setAwarding(true);
                     setError(null);
                     try {
                       await api.awardBonuses(awardState.champion, awardState.topScorer, awardState.championPoints, awardState.topScorerPoints);
+                      haptic.success();
                       setMessage('Бонусы начислены');
                       setTimeout(() => setMessage(null), 3000);
                     } catch (err) {
+                      haptic.error();
                       setError(err instanceof Error ? err.message : 'Ошибка начисления бонусов');
                     } finally {
                       setAwarding(false);
@@ -323,7 +344,10 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
               <p>Редактирование счетов матчей и результатов</p>
               {onManageMatches ? (
                 <button
-                  onClick={onManageMatches}
+                  onClick={() => {
+                    haptic.light();
+                    onManageMatches();
+                  }}
                   className="predict-button"
                   style={{ marginTop: '8px' }}
                 >
@@ -358,7 +382,10 @@ export function AdminView({ onEditUserPredictions, onManageMatches }: AdminViewP
                           {onEditUserPredictions ? (
                             <span 
                               className="user-name clickable"
-                              onClick={() => onEditUserPredictions(u.id)}
+                              onClick={() => {
+                                haptic.light();
+                                onEditUserPredictions(u.id);
+                              }}
                               style={{ cursor: 'pointer', color: 'var(--tg-theme-button-color)' }}
                             >
                               {u.name}
