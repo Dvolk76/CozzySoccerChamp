@@ -628,10 +628,6 @@ body {
   display: block;
 }
 
-.match-group-content.collapsed {
-  display: none;
-}
-
 .match-day-header {
   background: var(--badge-bg-color);
   color: var(--tg-theme-text-color);
@@ -657,10 +653,6 @@ body {
 
 .match-day-content {
   display: block;
-}
-
-.match-day-content.collapsed {
-  display: none;
 }
 
 .match-status {
