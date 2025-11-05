@@ -72,6 +72,14 @@ export async function initDataAuth(
       const tgUserId: string = String(user.id);
       const name: string = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || 'Unknown';
       const avatar: string | null = user.photo_url || null;
+      
+      // Debug: log avatar info
+      logger.info('User auth:', { 
+        tgUserId, 
+        name, 
+        hasPhotoUrl: !!user.photo_url,
+        photoUrl: user.photo_url 
+      });
 
       // Upsert minimal user
       const dbUser = await prisma.user.upsert({

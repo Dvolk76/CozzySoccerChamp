@@ -17,6 +17,13 @@ export function registerLeaderboardRoutes(app: Express, prisma: PrismaClient, lo
         const leaderboard = items
           .map((s) => ({
             ...s,
+            user: {
+              id: s.user.id,
+              name: s.user.name,
+              tg_user_id: s.user.tg_user_id,
+              role: s.user.role,
+              avatar: s.user.avatar || undefined
+            },
             pointsTotal: (s.pointsTotal || 0) + (s as any).bonusPoints || 0,
           }))
           .sort((a, b) => {
