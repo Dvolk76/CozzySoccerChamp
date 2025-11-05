@@ -625,19 +625,11 @@ body {
 }
 
 .match-group-content {
-  overflow: hidden;
-  max-height: 1500px;
-  opacity: 1;
-  transform: translateY(0);
-  transition: max-height 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
-  will-change: max-height, opacity, transform;
+  display: block;
 }
 
 .match-group-content.collapsed {
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-2px);
-  pointer-events: none;
+  display: none;
 }
 
 .match-day-header {
@@ -664,19 +656,11 @@ body {
 
 
 .match-day-content {
-  overflow: hidden;
-  max-height: 900px;
-  opacity: 1;
-  transform: translateY(0);
-  transition: max-height 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
-  will-change: max-height, opacity, transform;
+  display: block;
 }
 
 .match-day-content.collapsed {
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-2px);
-  pointer-events: none;
+  display: none;
 }
 
 .match-status {
