@@ -3,7 +3,6 @@ import { api } from '../api';
 import { useMatchesUiState } from '../hooks/useMatchesUiState';
 import type { Match } from '../types';
 import { haptic } from '../utils/haptic';
-import { Collapsible } from '../components/Collapsible';
 
 interface AdminMatchesManagementViewProps {
   onBack: () => void;
@@ -288,8 +287,9 @@ export function AdminMatchesManagementView({ onBack }: AdminMatchesManagementVie
               </span>
             </div>
             
-            <Collapsible isOpen={!isGroupCollapsed}>
-              <div className="match-group-content">
+            <div 
+              className={`match-group-content ${isGroupCollapsed ? 'collapsed' : ''}`}
+            >
               {Object.entries(dayGroups).map(([date, dayMatches]) => {
                 const dayKey = `${groupName}-${date}`;
                 const isDayCollapsed = collapsedDays.has(dayKey);
@@ -309,22 +309,21 @@ export function AdminMatchesManagementView({ onBack }: AdminMatchesManagementVie
                       </span>
                     </div>
                     
-                    <Collapsible isOpen={!isDayCollapsed}>
-                      <div className="match-day-content">
-                        {dayMatches.map((match) => (
-                          <AdminMatchScoreCard
-                            key={match.id}
-                            match={match}
-                            onUpdate={loadMatches}
-                          />
-                        ))}
-                      </div>
-                    </Collapsible>
+                    <div 
+                      className={`match-day-content ${isDayCollapsed ? 'collapsed' : ''}`}
+                    >
+                      {dayMatches.map((match) => (
+                        <AdminMatchScoreCard
+                          key={match.id}
+                          match={match}
+                          onUpdate={loadMatches}
+                        />
+                      ))}
+                    </div>
                   </div>
                 );
               })}
-              </div>
-            </Collapsible>
+            </div>
           </div>
         );
       })}

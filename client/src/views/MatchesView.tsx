@@ -6,7 +6,6 @@ import { LastSync } from '../components/LastSync';
 import type { Match } from '../types';
 import { useMatchesUiState } from '../hooks/useMatchesUiState';
 import { haptic } from '../utils/haptic';
-import { Collapsible } from '../components/Collapsible';
 
 export function MatchesView() {
   const { matches, loading, error, refresh, isPolling, lastUpdate } = useMatches(true);
@@ -314,8 +313,9 @@ export function MatchesView() {
               </span>
             </div>
             
-            <Collapsible isOpen={!isGroupCollapsed}>
-              <div className="match-group-content">
+            <div 
+              className={`match-group-content ${isGroupCollapsed ? 'collapsed' : ''}`}
+            >
               {Object.entries(dayGroups).map(([date, dayMatches]) => {
                 const dayKey = `${groupName}-${date}`;
                 const isDayCollapsed = collapsedDays.has(dayKey);
@@ -335,21 +335,20 @@ export function MatchesView() {
                       </span>
                     </div>
                     
-                    <Collapsible isOpen={!isDayCollapsed}>
-                      <div className="match-day-content">
-                        {dayMatches.map((match) => (
-                          <MatchCard
-                            key={match.id}
-                            match={match}
-                          />
-                        ))}
-                      </div>
-                    </Collapsible>
+                    <div 
+                      className={`match-day-content ${isDayCollapsed ? 'collapsed' : ''}`}
+                    >
+                      {dayMatches.map((match) => (
+                        <MatchCard
+                          key={match.id}
+                          match={match}
+                        />
+                      ))}
+                    </div>
                   </div>
                 );
               })}
-              </div>
-            </Collapsible>
+            </div>
           </div>
         );
       })}

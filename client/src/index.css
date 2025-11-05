@@ -537,13 +537,12 @@ body {
 
 /* Leaderboard */
 .leaderboard-item {
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
   padding: 12px 16px;
   background: var(--card-bg-color);
-  border-radius: 12px;
+  border-radius: 8px;
   margin-bottom: 8px;
   border: 1px solid var(--border-color);
 }
@@ -552,39 +551,11 @@ body {
   font-weight: bold;
   color: var(--tg-theme-button-color);
   min-width: 24px;
-  text-align: center;
-}
-
-.leaderboard-avatar-wrapper {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
-}
-
-.leaderboard-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.leaderboard-avatar-fallback {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--tg-theme-text-color);
-  opacity: 0.75;
 }
 
 .player-info {
   flex: 1;
-  margin-left: 0;
-  min-width: 0;
+  margin-left: 12px;
 }
 
 .player-name {
@@ -655,8 +626,10 @@ body {
 
 .match-group-content {
   display: block;
-  /* Allow content to expand naturally */
-  overflow: visible;
+}
+
+.match-group-content.collapsed {
+  display: none;
 }
 
 .match-day-header {
@@ -684,8 +657,10 @@ body {
 
 .match-day-content {
   display: block;
-  /* Allow content to expand naturally */
-  overflow: visible;
+}
+
+.match-day-content.collapsed {
+  display: none;
 }
 
 .match-status {
@@ -1166,10 +1141,7 @@ body {
   background: var(--card-bg-color);
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  overflow: visible;
-  /* Ensure bets section doesn't get clipped */
-  position: relative;
-  z-index: 1;
+  overflow: hidden;
 }
 
 .bets-table-wrapper {

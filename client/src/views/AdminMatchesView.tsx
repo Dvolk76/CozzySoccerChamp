@@ -4,7 +4,6 @@ import { useMatchesUiState } from '../hooks/useMatchesUiState';
 import type { Match, Prediction, User } from '../types';
 import { getMatchStatus, canBetOnMatch, isMatchActive } from '../utils/matchStatus';
 import { haptic } from '../utils/haptic';
-import { Collapsible } from '../components/Collapsible';
 
 interface AdminMatchesViewProps {
   userId: string;
@@ -364,8 +363,9 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
               </span>
             </div>
             
-            <Collapsible isOpen={!isGroupCollapsed}>
-              <div className="match-group-content">
+            <div 
+              className={`match-group-content ${isGroupCollapsed ? 'collapsed' : ''}`}
+            >
               {Object.entries(dayGroups).map(([date, dayMatches]) => {
                 const dayKey = `${groupName}-${date}`;
                 const isDayCollapsed = collapsedDays.has(dayKey);
@@ -385,34 +385,33 @@ export function AdminMatchesView({ userId, onBack }: AdminMatchesViewProps) {
                       </span>
                     </div>
                     
-                    <Collapsible isOpen={!isDayCollapsed}>
-                      <div className="match-day-content">
-                        {dayMatches.map((match) => {
-                          const prediction = getPredictionForMatch(match.id);
-                          const matchWithPrediction = {
-                            ...match,
-                            userPrediction: prediction ? {
-                              predHome: prediction.predHome,
-                              predAway: prediction.predAway
-                            } : null
-                          };
-                          
-                          return (
-                            <AdminMatchCard
-                              key={match.id}
-                              match={matchWithPrediction}
-                              userId={userId}
-                              onUpdate={loadUserPredictions}
-                            />
-                          );
-                        })}
-                      </div>
-                    </Collapsible>
+                    <div 
+                      className={`match-day-content ${isDayCollapsed ? 'collapsed' : ''}`}
+                    >
+                      {dayMatches.map((match) => {
+                        const prediction = getPredictionForMatch(match.id);
+                        const matchWithPrediction = {
+                          ...match,
+                          userPrediction: prediction ? {
+                            predHome: prediction.predHome,
+                            predAway: prediction.predAway
+                          } : null
+                        };
+                        
+                        return (
+                          <AdminMatchCard
+                            key={match.id}
+                            match={matchWithPrediction}
+                            userId={userId}
+                            onUpdate={loadUserPredictions}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
-              </div>
-            </Collapsible>
+            </div>
           </div>
         );
       })}
