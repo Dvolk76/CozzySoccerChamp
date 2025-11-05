@@ -655,6 +655,8 @@ body {
 
 .match-group-content {
   display: block;
+  /* Allow content to expand naturally */
+  overflow: visible;
 }
 
 .match-day-header {
@@ -682,6 +684,8 @@ body {
 
 .match-day-content {
   display: block;
+  /* Allow content to expand naturally */
+  overflow: visible;
 }
 
 .match-status {
@@ -1162,7 +1166,10 @@ body {
   background: var(--card-bg-color);
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  overflow: visible;
+  /* Ensure bets section doesn't get clipped */
+  position: relative;
+  z-index: 1;
 }
 
 .bets-table-wrapper {

@@ -65,14 +65,32 @@ export function Collapsible({ isOpen, durationMs = 180, children }: CollapsibleP
   useEffect(() => {
     if (!isOpen) return;
     const content = contentRef.current;
-    if (!content) return;
-    const observer = new ResizeObserver(() => {
-      if (containerRef.current && !isTransitioning && height === 'auto') {
-        // Keep auto to adapt naturally
-        setHeight('auto');
+    const container = containerRef.current;
+    if (!content || !container) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      if (!isTransitioning && height === 'auto') {
+        // Content size changed - force smooth height recalculation
+        const newHeight = `${content.scrollHeight}px`;
+        requestAnimationFrame(() => {
+          if (containerRef.current && contentRef.current) {
+            // Briefly set pixel height then back to auto for smooth expansion
+            setHeight(newHeight);
+            requestAnimationFrame(() => {
+              setHeight('auto');
+            });
+          }
+        });
       }
     });
+    
+    // Observe the content wrapper
     observer.observe(content);
+    
+    // Also observe key nested elements that might change (like bets-section)
+    const nestedCollapsibles = content.querySelectorAll('.bets-section, .match-card, .bets-table-wrapper');
+    nestedCollapsibles.forEach(element => observer.observe(element));
+    
     return () => observer.disconnect();
   }, [isOpen, height, isTransitioning]);
 
