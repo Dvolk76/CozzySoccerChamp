@@ -288,7 +288,8 @@ export class CachedDataService {
               id: user.id,
               name: user.name,
               tg_user_id: user.tg_user_id,
-              role: user.role
+              role: user.role,
+              avatar: user.avatar || undefined
             },
             pointsTotal: totalScore + bonusPoints,
             exactCount: exactScores,

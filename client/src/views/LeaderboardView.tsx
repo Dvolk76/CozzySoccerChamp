@@ -4,6 +4,7 @@ import { useLeaderboard, useLeaderboardByRounds } from '../hooks/useData';
 import { LastSync } from '../components/LastSync';
 import type { LeaderboardItem as LeaderboardItemType } from '../types';
 import { haptic } from '../utils/haptic';
+import { getInitials } from '../utils/avatar';
 
 export function LeaderboardView() {
   try {
@@ -201,6 +202,7 @@ export function LeaderboardView() {
                         style={{
                           display: 'flex',
                           alignItems: 'center',
+                          gap: '12px',
                           padding: '12px',
                           marginBottom: '8px',
                           backgroundColor: 'var(--tg-theme-bg-color, #fff)',
@@ -226,6 +228,21 @@ export function LeaderboardView() {
                           flexShrink: 0
                         }}>
                           {index + 1}
+                        </div>
+
+                        {/* Avatar */}
+                        <div className="leaderboard-avatar-wrapper" style={{ width: '42px', height: '42px', flexShrink: 0 }}>
+                          {entry.userAvatar ? (
+                            <img
+                              src={entry.userAvatar}
+                              alt={entry.userName}
+                              className="leaderboard-avatar"
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <span className="leaderboard-avatar-fallback">{getInitials(entry.userName)}</span>
+                          )}
                         </div>
 
                         {/* User info */}
