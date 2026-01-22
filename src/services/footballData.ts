@@ -41,6 +41,10 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
     const matchday = m.matchday ?? null;
     let status = m.status ?? 'SCHEDULED';
 
+    // ВАЖНО: Если есть fullTime score, матч считается завершенным
+    // Это должно проверяться в первую очередь, чтобы сразу помечать матч как FINISHED
+    const hasFullTimeScore = m.score?.fullTime?.home != null && m.score?.fullTime?.away != null;
+    
     // Определяем счет в зависимости от статуса
     // - Для завершенных матчей используем только fullTime
     // - Для лайв матчей берем best-available: fullTime -> regularTime -> halfTime
@@ -48,10 +52,18 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
     let scoreAway: number | null = null;
 
     const isLiveLike = status === 'LIVE' || status === 'IN_PLAY' || status === 'PAUSED' || status === 'TIMED';
-    if (status === 'FINISHED') {
-      scoreHome = m.score?.fullTime?.home ?? null;
-      scoreAway = m.score?.fullTime?.away ?? null;
+    
+    // Если есть fullTime score, используем его и помечаем матч как завершенный
+    if (hasFullTimeScore) {
+      scoreHome = m.score.fullTime.home;
+      scoreAway = m.score.fullTime.away;
+      status = 'FINISHED';
+    } else if (status === 'FINISHED') {
+      // Если статус FINISHED, но fullTime нет - пытаемся получить из других источников
+      scoreHome = m.score?.fullTime?.home ?? m.score?.regularTime?.home ?? null;
+      scoreAway = m.score?.fullTime?.away ?? m.score?.regularTime?.away ?? null;
     } else if (isLiveLike) {
+      // Для лайв матчей берем best-available: fullTime -> regularTime -> halfTime
       scoreHome =
         (m.score?.fullTime?.home ??
          m.score?.regularTime?.home ??
@@ -72,18 +84,19 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
     const hoursFromKickoff = Math.max(0, (now.getTime() - matchTime.getTime()) / (1000 * 60 * 60));
 
     // Если время начала уже наступило, но API оставил статус TIMED/SCHEDULED — считаем матч начатым
-    if ((status === 'TIMED' || status === 'SCHEDULED') && now >= matchTime) {
+    // Но только если матч еще не завершен (нет fullTime score)
+    if (!hasFullTimeScore && (status === 'TIMED' || status === 'SCHEDULED') && now >= matchTime) {
       status = 'IN_PLAY';
     }
     
     // Если матч был более 4 часов назад и есть счет, принудительно устанавливаем статус FINISHED
-    if (hoursFromKickoff >= 4 && (scoreHome != null || scoreAway != null)) {
+    if (!hasFullTimeScore && hoursFromKickoff >= 4 && (scoreHome != null || scoreAway != null)) {
       status = 'FINISHED';
     }
     
     // Если матч был более 6 часов назад, принудительно устанавливаем статус FINISHED
     // ВАЖНО: Если статус уже FINISHED от API, но счет еще не установлен, пытаемся получить счет из других источников
-    if (hoursFromKickoff >= 6) {
+    if (!hasFullTimeScore && hoursFromKickoff >= 6) {
       status = 'FINISHED';
       // Если счет еще не установлен, но матч завершен, пытаемся получить счет из fullTime
       if ((scoreHome === null || scoreAway === null) && m.score?.fullTime) {

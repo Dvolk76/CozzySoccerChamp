@@ -39,14 +39,22 @@ async function syncToD1() {
     const matchday = m.matchday ?? null;
     let status = m.status ?? 'SCHEDULED';
     
+    // ВАЖНО: Если есть fullTime score, матч считается завершенным
+    const hasFullTimeScore = m.score?.fullTime?.home != null && m.score?.fullTime?.away != null;
+    
     let scoreHome = m.score?.fullTime?.home ?? null;
     let scoreAway = m.score?.fullTime?.away ?? null;
     
-    // Если fullTime счета нет, но есть halfTime - используем его для лайв матчей
-    if ((scoreHome === null || scoreAway === null) && 
-        (status === 'LIVE' || status === 'IN_PLAY' || status === 'PAUSED' || status === 'TIMED')) {
-      scoreHome = m.score?.halfTime?.home ?? scoreHome;
-      scoreAway = m.score?.halfTime?.away ?? scoreAway;
+    // Если есть fullTime score, используем его и помечаем матч как завершенный
+    if (hasFullTimeScore) {
+      status = 'FINISHED';
+    } else {
+      // Если fullTime счета нет, но есть halfTime - используем его для лайв матчей
+      if ((scoreHome === null || scoreAway === null) && 
+          (status === 'LIVE' || status === 'IN_PLAY' || status === 'PAUSED' || status === 'TIMED')) {
+        scoreHome = m.score?.halfTime?.home ?? scoreHome;
+        scoreAway = m.score?.halfTime?.away ?? scoreAway;
+      }
     }
     
     // Дополнительная логика для исправления статусов старых матчей
@@ -54,11 +62,13 @@ async function syncToD1() {
     const matchTime = new Date(m.utcDate);
     const hoursFromKickoff = Math.max(0, (now.getTime() - matchTime.getTime()) / (1000 * 60 * 60));
     
-    if (hoursFromKickoff >= 4 && (scoreHome !== null || scoreAway !== null)) {
+    // Если матч был более 4 часов назад и есть счет, принудительно устанавливаем статус FINISHED
+    if (!hasFullTimeScore && hoursFromKickoff >= 4 && (scoreHome !== null || scoreAway !== null)) {
       status = 'FINISHED';
     }
     
-    if (hoursFromKickoff >= 6) {
+    // Если матч был более 6 часов назад, принудительно устанавливаем статус FINISHED
+    if (!hasFullTimeScore && hoursFromKickoff >= 6) {
       status = 'FINISHED';
     }
     

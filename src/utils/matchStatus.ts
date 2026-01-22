@@ -28,6 +28,18 @@ export function getMatchStatus(match: {
   const minutesFromKickoff = Math.max(0, Math.floor((now.getTime() - matchTime.getTime()) / 60000));
   const hasScore = match.scoreHome != null && match.scoreAway != null;
   
+  // ВАЖНО: Если есть счет и матч уже начался (время наступило), считаем его завершенным
+  // Это гарантирует, что матч с fullTime score отображается как завершенный
+  if (hasScore && now >= matchTime && match.status !== 'SCHEDULED' && match.status !== 'TIMED') {
+    return {
+      text: 'Завершен',
+      class: 'finished',
+      isLive: false,
+      isFinished: true,
+      isScheduled: false
+    };
+  }
+  
   // Консервативные пороги для определения завершения матча
   const FINISH_MINUTES_HARD = 155;      // ~2h35m от начала (покрывает ET + остановки)
   const FINISH_MINUTES_WITH_SCORE = 135; // ~2h15m если есть счет
