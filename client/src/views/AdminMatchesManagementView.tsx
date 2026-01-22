@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useMatchesUiState } from '../hooks/useMatchesUiState';
 import type { Match } from '../types';
 import { haptic } from '../utils/haptic';
+import { isMatchActive } from '../utils/matchStatus';
 
 interface AdminMatchesManagementViewProps {
   onBack: () => void;
@@ -427,6 +428,7 @@ function AdminMatchScoreCardInner({ match, onUpdate }: AdminMatchScoreCardProps)
   };
   
   const status = getMatchStatus();
+  const isLive = isMatchActive(match);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ru-RU', {
