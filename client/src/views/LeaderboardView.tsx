@@ -231,7 +231,7 @@ export function LeaderboardView() {
                         </div>
 
                         {/* Avatar */}
-                        <div className="leaderboard-avatar-wrapper" style={{ width: '42px', height: '42px', flexShrink: 0 }}>
+                        <div className="leaderboard-avatar-wrapper">
                           {entry.userAvatar ? (
                             <img
                               src={entry.userAvatar}
