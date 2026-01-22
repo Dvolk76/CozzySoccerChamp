@@ -82,8 +82,14 @@ export async function syncChampionsLeague(prisma: PrismaClient, season: number, 
     }
     
     // Если матч был более 6 часов назад, принудительно устанавливаем статус FINISHED
+    // ВАЖНО: Если статус уже FINISHED от API, но счет еще не установлен, пытаемся получить счет из других источников
     if (hoursFromKickoff >= 6) {
       status = 'FINISHED';
+      // Если счет еще не установлен, но матч завершен, пытаемся получить счет из fullTime
+      if ((scoreHome === null || scoreAway === null) && m.score?.fullTime) {
+        scoreHome = m.score.fullTime.home ?? scoreHome;
+        scoreAway = m.score.fullTime.away ?? scoreAway;
+      }
     }
 
     tasks.push(
