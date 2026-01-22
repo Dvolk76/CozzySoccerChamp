@@ -35,11 +35,14 @@ function MatchCardInner({ match }: MatchCardProps) {
 
   const kickoffTime = new Date(match.kickoffAt);
   const isLocked = new Date() >= kickoffTime;
-  const hasScore = match.scoreHome != null && match.scoreAway != null;
+  // Более строгая проверка: счет есть если оба значения определены (не null и не undefined)
+  // Учитываем, что 0 это валидный счет
+  const hasScore = typeof match.scoreHome === 'number' && typeof match.scoreAway === 'number';
   
-  // Debug: показываем данные для live матчей
+  // Debug: показываем данные для live матчей и завершенных матчей без счета
   const status = getMatchStatus(match);
   const isLive = isMatchActive(match);
+  const isFinished = status.isFinished;
   
   if (isLive) {
     console.log('🔴 LIVE MATCH DATA:', {
@@ -49,6 +52,21 @@ function MatchCardInner({ match }: MatchCardProps) {
       scoreAway: match.scoreAway,
       hasScore,
       statusInfo: status
+    });
+  }
+  
+  // Debug: показываем завершенные матчи без счета
+  if (isFinished && !hasScore) {
+    console.log('⚠️ FINISHED MATCH WITHOUT SCORE:', {
+      teams: `${match.homeTeam} vs ${match.awayTeam}`,
+      status: match.status,
+      scoreHome: match.scoreHome,
+      scoreAway: match.scoreAway,
+      matchday: match.matchday,
+      kickoffAt: match.kickoffAt,
+      hasScore,
+      scoreHomeType: typeof match.scoreHome,
+      scoreAwayType: typeof match.scoreAway
     });
   }
 
@@ -251,7 +269,13 @@ function MatchCardInner({ match }: MatchCardProps) {
         <div className="team">{match.homeTeam}</div>
         <div className="score-wrapper">
           <div className={`score ${scoreChanged ? `score-changed-${scoreChanged}` : ''} ${isLive ? 'score-live' : ''}`}>
-            {hasScore ? `${match.scoreHome}:${match.scoreAway}` : isLive ? '0:0' : 'vs'}
+            {hasScore 
+              ? `${match.scoreHome}:${match.scoreAway}` 
+              : isFinished 
+                ? '0:0' // Для завершенных матчей показываем 0:0 если счет не установлен
+                : isLive 
+                  ? '0:0' 
+                  : 'vs'}
           </div>
           {isLive && (
             <span className="live-score-badge">LIVE</span>
