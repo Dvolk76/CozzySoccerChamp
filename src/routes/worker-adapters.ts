@@ -975,7 +975,14 @@ export async function adminHandler(
         }
 
         const body = await request.json() as any;
-        const { scoreHome, scoreAway, status, kickoffAt } = body || {};
+        let { scoreHome, scoreAway, status, kickoffAt } = body || {};
+        
+        // ВАЖНО: Если есть полный счет (оба значения не null), автоматически устанавливаем статус FINISHED
+        const hasFullScore = scoreHome != null && scoreAway != null;
+        if (hasFullScore && status !== 'FINISHED') {
+          status = 'FINISHED';
+          logger.info({ matchId, scoreHome, scoreAway }, 'Auto-setting status to FINISHED due to full score');
+        }
         
         // Get the match before updating to check if scores changed
         const oldMatch = await prisma.match.findUnique({ where: { id: matchId } });
